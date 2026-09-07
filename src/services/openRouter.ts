@@ -424,9 +424,12 @@ class OpenRouterService {
    * @param base64 JPEG bytes encoded as base64 (from ImageManipulator / FileSystem).
    */
   async verifyPhoto(opts: { base64: string; expected: string }): Promise<VisionVerdict> {
-    if (!this.isConfigured || opts.base64.length === 0) {
-      // Demo fallback: deterministic accept so the flow is testable offline.
-      return new VisionVerdict(true, 0.96, 'Demo mode — photo accepted.');
+    if (opts.base64.length === 0) {
+      // No image bytes — never auto-accept; report it as a failed verification.
+      throw new AiHttpException(400, 'No photo captured to verify.');
+    }
+    if (!this.isConfigured) {
+      throw new AiHttpException(403, 'AI is not configured. Check OPENROUTER_API_KEY in .env.');
     }
 
     let lastError: AiHttpException | null = null;

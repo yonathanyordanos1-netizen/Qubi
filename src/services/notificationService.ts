@@ -81,11 +81,16 @@ async function ensureInitialized(): Promise<boolean> {
 export async function registerPushToken(): Promise<void> {
   try {
     if (Platform.OS === 'web') return;
-    if (!Constants.expoConfig?.extra?.eas?.projectId && Constants.expoConfig?.slug !== 'Qubi-mobile') {
-      // projectId is required for push in production builds; still attempt below.
+    // Push requires the EAS projectId baked into the bundle (app.json extra).
+    if (!Constants.expoConfig?.extra?.eas?.projectId) return;
+    let settings = await Notifications.getPermissionsAsync();
+    let granted = settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
+    if (!granted && settings.canAskAgain) {
+      settings = await Notifications.requestPermissionsAsync({
+        ios: { allowAlert: true, allowBadge: true, allowSound: true },
+      });
+      granted = settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
     }
-    const settings = await Notifications.getPermissionsAsync();
-    const granted = settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
     if (!granted) return;
     const token = await Notifications.getExpoPushTokenAsync();
     const tokenString =

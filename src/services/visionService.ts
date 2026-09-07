@@ -140,28 +140,9 @@ export async function verifyProofWithAI(
     }
     throw lastError ?? new Error('all-models-failed');
   } catch (error) {
-    // SMART LOCAL VISION SIMULATOR — never crash, always verify something sane.
-    const targetQuest = pendingHabits[0] ?? null;
-    if (targetQuest == null) {
-      return {
-        success: false,
-        detectedObjects: [],
-        description: 'No pending tasks found to verify.',
-        matchedQuestId: null,
-        matchedQuestTitle: null,
-        xpEarned: 0,
-        message: 'All tasks for today are already completed!',
-      };
-    }
-    return {
-      success: true,
-      detectedObjects: [targetQuest.name, 'evidence photo'],
-      description: `I analyzed your photo and detected activities matching "${targetQuest.name}"!`,
-      matchedQuestId: targetQuest.id,
-      matchedQuestTitle: targetQuest.name,
-      xpEarned: 50,
-      message: `Verified! I detected "${targetQuest.name}" in your image. +50 XP banked! 🎉`,
-    };
+    // Never auto-accept. Surface the real failure so the UI can show a
+    // retryable message — no offline simulator that grants free XP.
+    throw error;
   }
 }
 

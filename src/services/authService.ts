@@ -163,7 +163,7 @@ export class SupabaseAuthService {
    */
   async signUpOrResendOtp(email: string, password: string): Promise<OtpStatus> {
     if (supabase == null) {
-      return { status: 'error', message: 'Online accounts are not configured in this build.' };
+      return { status: 'error', message: 'Backend is not configured — check your connection and try again.' };
     }
     const cleanEmail = email.trim().toLowerCase();
     try {
@@ -201,7 +201,7 @@ export class SupabaseAuthService {
    */
   async verifyOtpAndLogin(email: string, token: string): Promise<{ ok: boolean; message?: string }> {
     if (supabase == null) {
-      return { ok: false, message: 'Online accounts are not configured in this build.' };
+      return { ok: false, message: 'Backend is not configured — check your connection and try again.' };
     }
     const cleanEmail = email.trim().toLowerCase();
     const cleanToken = token.trim();
@@ -236,7 +236,7 @@ export class SupabaseAuthService {
    */
   async resendOtpCode(email: string): Promise<OtpStatus> {
     if (supabase == null) {
-      return { status: 'error', message: 'Online accounts are not configured in this build.' };
+      return { status: 'error', message: 'Backend is not configured — check your connection and try again.' };
     }
     const cleanEmail = email.trim().toLowerCase();
     try {
@@ -265,7 +265,7 @@ export class SupabaseAuthService {
    */
   async verifyEmailOtp(email: string, token: string): Promise<{ ok: boolean; message?: string }> {
     if (supabase == null) {
-      return { ok: false, message: 'Online accounts are not configured in this build.' };
+      return { ok: false, message: 'Backend is not configured — check your connection and try again.' };
     }
     const cleanEmail = email.trim().toLowerCase();
     const cleanToken = token.trim();
@@ -295,7 +295,7 @@ export class SupabaseAuthService {
   /** Dedicated resend for the password-SIGNUP flow (user created via signUp). */
   async triggerResendCode(email: string): Promise<OtpStatus> {
     if (supabase == null) {
-      return { status: 'error', message: 'Online accounts are not configured in this build.' };
+      return { status: 'error', message: 'Backend is not configured — check your connection and try again.' };
     }
     const cleanEmail = email.trim().toLowerCase();
     try {
