@@ -186,6 +186,15 @@ export class SupabaseAuthService {
         // Auto-confirm enabled on this project — verified & logged in already.
         return { status: 'already_verified' };
       }
+      // GoTrue returns 200 (no error, no session) for an email that is ALREADY
+      // registered. When that account is confirmed it sends NO email — surface
+      // the existing account instead of claiming a fresh code went out.
+      if (data.user != null && (data.user.confirmed_at != null || data.user.email_confirmed_at != null)) {
+        return {
+          status: 'error',
+          message: 'An account with this email already exists — try signing in instead.',
+        };
+      }
       // signUp already sent the confirmation email (mailer_autoconfirm=false) — single email only
       log('signUp ok, OTP email sent to', cleanEmail);
       return { status: 'code_sent' };
