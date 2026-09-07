@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>Confirm your Qubi account</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+</head>
+<body style="margin:0; padding:0; background-color:#FFF7ED;">
+  <center style="width:100%; background-color:#FFF7ED;">
+    <!--[if mso]>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center">
+    <![endif]-->
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px; margin:0 auto;">
+      <!-- Header: Qubi Orange with centered logo -->
+      <tr>
+        <td style="background-color:#F97316; padding:32px 24px; text-align:center;" bgcolor="#F97316">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;">
+            <tr>
+              <td align="center" style="text-align:center;">
+                <!-- Logo: Qubi_2.jpg hosted on Supabase Storage (public-assets) — absolute URL required for email clients -->
+                <img src="https://qnbrrxwctokuwxglcdjd.supabase.co/storage/v1/object/public/public-assets/Qubi_2.jpg" width="72" height="72" alt="Qubi" style="display:block; width:72px; height:72px; border:0; outline:none; text-decoration:none; border-radius:18px; background-color:#FFFFFF;" />
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding-top:14px; text-align:center;">
+                <span style="font-family:Arial, Helvetica, sans-serif; font-size:26px; line-height:32px; font-weight:900; letter-spacing:-0.5px; color:#FFFFFF; text-align:center;">Qubi</span>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <!-- Card body -->
+      <tr>
+        <td style="background-color:#FFFFFF; padding:36px 32px 32px 32px; border-left:1px solid #FFE4CC; border-right:1px solid #FFE4CC;">
+          <h1 style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:22px; line-height:28px; font-weight:800; color:#111827; text-align:left;">
+            Confirm your email
+          </h1>
+          <p style="margin:0 0 20px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:22px; color:#6B7280; text-align:left;">
+            Welcome to Qubi — build unstoppable habits. Tap the button below to confirm <strong style="color:#111827;">{{ .Email }}</strong> and activate your account. This link expires in 1 hour.
+          </p>
+          <!-- CTA Button (bulletproof) -->
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:0;">
+            <tr>
+              <td align="center" bgcolor="#F97316" style="border-radius:999px; background-color:#F97316;">
+                <!--[if mso]>
+                <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="{{ .ConfirmationURL }}" style="height:48px; v-text-anchor:middle; width:260px;" arcsize="50%" strokecolor="#F97316" fillcolor="#F97316">
+                <center style="color:#FFFFFF; font-family:Arial, sans-serif; font-size:15px; font-weight:800;">Confirm Email</center>
+                </v:roundrect>
+                <![endif]-->
+                <!--[if !mso]><!-->
+                <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block; padding:14px 28px; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:20px; font-weight:800; color:#FFFFFF; text-decoration:none; border-radius:999px; background-color:#F97316;">
+                  Confirm Email →
+                </a>
+                <!--<![endif]-->
+              </td>
+            </tr>
+          </table>
+          <div style="clear:both; height:20px; line-height:20px;">&nbsp;</div>
+          <p style="margin:0 0 6px 0; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:18px; color:#9CA3AF; text-align:left;">
+            Button not working? Copy and paste this link into your browser:
+          </p>
+          <p style="margin:0 0 20px 0; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:18px; color:#F97316; word-break:break-all; text-align:left;">
+            <a href="{{ .ConfirmationURL }}" style="color:#F97316; text-decoration:underline; word-break:break-all;">{{ .ConfirmationURL }}</a>
+          </p>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:8px;">
+            <tr>
+              <td style="border-top:1px solid #F3F4F6; padding-top:16px;">
+                <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:18px; color:#9CA3AF; text-align:left;">
+                  If you didn’t create a Qubi account, you can safely ignore this email.<br>
+                  Need help? Reply to this email — we’re here.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <!-- Footer -->
+      <tr>
+        <td style="background-color:#FFF7ED; padding:20px 32px 32px 32px; text-align:center; border-left:1px solid #FFE4CC; border-right:1px solid #FFE4CC; border-bottom:1px solid #FFE4CC; border-radius:0 0 12px 12px;">
+          <p style="margin:0 0 4px 0; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:16px; color:#9CA3AF; text-align:center;">
+            © 2026 Qubi — Build unstoppable habits.
+          </p>
+          <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:11px; line-height:16px; color:#D1D5DB; text-align:center;">
+            Qubi · Supabase Auth · <a href="https://qnbrrxwctokuwxglcdjd.supabase.co" style="color:#D1D5DB; text-decoration:underline;">qnbrrxwctokuwxglcdjd.supabase.co</a>
+          </p>
+        </td>
+      </tr>
+    </table>
+    <!--[if mso]>
+    </td></tr></table>
+    <![endif]-->
+  </center>
+</body>
+</html>

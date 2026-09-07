@@ -1,25 +1,78 @@
 {
   "expo": {
-    "name": "questify-mobile",
-    "slug": "questify-mobile",
+    "name": "Qubi",
+    "slug": "qubi-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "scheme": "qubi",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.qubi.app",
+      "entitlements": {
+        "com.apple.developer.healthkit": true
+      },
+      "infoPlist": {
+        "NSCameraUsageDescription": "Qubi uses your camera to capture photo proof of completed quests.",
+        "NSPhotoLibraryUsageDescription": "Qubi uses your photo library to attach photo proof to quests.",
+        "NSMicrophoneUsageDescription": "Qubi does not record audio.",
+        "NSHealthShareUsageDescription": "Qubi reads your workouts, step count and active calories to award XP and show fitness progress.",
+        "NSHealthUpdateUsageDescription": "Qubi saves workout data to help track your fitness quests.",
+        "NSCalendarsUsageDescription": "Qubi accesses your calendar to find free time for quests and sync scheduled tasks.",
+        "NSRemindersUsageDescription": "Qubi creates reminders for your quests so you never miss a scheduled task.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
+      "package": "com.qubi.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
+        "backgroundColor": "#F97316",
+        "foregroundImage": "./assets/adaptive-foreground.png",
+        "backgroundImage": "./assets/adaptive-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "READ_CALENDAR",
+        "WRITE_CALENDAR",
+        "SCHEDULE_EXACT_ALARM",
+        "POST_NOTIFICATIONS"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F97316",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 256,
+          "resizeMode": "cover"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#F97316"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      "expo-video",
+      "expo-calendar",
+      "expo-secure-store",
+      "expo-audio"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "79c4355a-d03b-460a-bac3-ca854ea3abf7"
+      }
     }
   }
 }

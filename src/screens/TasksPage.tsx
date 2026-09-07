@@ -1,0 +1,770 @@
+/**
+ * My Quest Plan — weekly quest matrix + today list + add/manage quests.
+ */
+import React, { useMemo, useState } from 'react';
+import {
+  Modal,
+  Pressable as RnPressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+
+import { useTheme } from '../theme/ThemeProvider';
+import { AppColors, withAlpha } from '../theme/colors';
+import { AppSpacing } from '../theme/spacing';
+import { fontFamilyFor } from '../theme/typography';
+import { Pressable } from '../components/Pressable';
+import { CameraIcon } from '../components/CameraIcon';
+import { StrokeIcon } from '../components/AppIcons';
+import { LiquidGlassCard } from '../components/LiquidGlass';
+import { PrimaryPillButton } from './HomePage';
+import { QubiMascot } from '../components/QubiMascot';
+import { useNav } from './navContext';
+import {
+  selectCompletedCount,
+  selectHabits,
+  selectStatusOf,
+  selectTodayIndex,
+  useAppStore,
+} from '../state/appStore';
+import { QuestStatus, type Habit } from '../types/models';
+
+const WEEK_DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const DAY_INITIALS = WEEK_DAYS;
+const NAME_COL_WIDTH = 120;
+const CELL_WIDTH = 34;
+const CELL_GAP = 4;
+
+const CATEGORIES: ReadonlyArray<[string, string]> = [
+  ['💪', 'Fitness'],
+  ['🧠', 'Wellness'],
+  ['📚', 'Learning'],
+  ['🧹', 'Chores'],
+];
+
+type ViewMode = 'matrix' | 'list';
+
+const VIEW_TAB_ICONS: Record<ViewMode, Parameters<typeof StrokeIcon>[0]['name']> = {
+  matrix: 'grid',
+  list: 'list',
+};
+
+export function TasksPage() {
+  const { isDark, colors } = useTheme();
+  const nav = useNav();
+
+  const habits = useAppStore(selectHabits);
+  const completedCount = useAppStore(selectCompletedCount);
+  const todayIndex = selectTodayIndex();
+
+  const [view, setView] = useState<ViewMode>('list');
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [manageMode, setManageMode] = useState(false);
+
+  return (
+    <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.flex1}>
+          <Text style={[styles.headerTitle, { color: colors.ink }]}>My Quest Plan</Text>
+          <View style={{ height: 4 }} />
+          <Text numberOfLines={2} style={[styles.headerSubtitle, { color: colors.muted }]}>
+            Tap a today-cell to snap your photo proof.
+          </Text>
+        </View>
+        <View style={{ width: 10 }} />
+        <Pressable onTap={() => setManageMode((m) => !m)} scale={0.94}>
+          <View style={[styles.manageBtn, { borderColor: manageMode ? AppColors.rewardBlue : colors.glassEdge }]}>
+            <StrokeIcon name="sliders" size={17} color={manageMode ? AppColors.rewardBlue : colors.muted} strokeWidth={2.2} />
+          </View>
+        </Pressable>
+      </View>
+
+      {/* Completed pill */}
+      <View style={styles.completedRow}>
+        <View style={[styles.completedPill, { backgroundColor: withAlpha(AppColors.rewardBlue, 0.12) }]}>
+          <StrokeIcon name="checkCircle" size={14} color={AppColors.rewardInkMid} strokeWidth={2.4} />
+          <View style={{ width: 6 }} />
+          <Text numberOfLines={1} style={[styles.completedPillText, { color: AppColors.rewardInkMid }]}>
+            {completedCount} verified this week
+          </Text>
+        </View>
+      </View>
+
+      {/* View tabs */}
+      <View style={[styles.viewTabs, { backgroundColor: colors.surfaceContainer }]}>
+        {(['matrix', 'list'] as ViewMode[]).map((mode) => (
+          <ViewTab key={mode} mode={mode} active={view === mode} onSelect={setView} ink={colors.ink} muted={colors.muted} />
+        ))}
+      </View>
+
+      <View style={{ height: 16 }} />
+
+      {habits.length === 0 ? (
+        <EmptyQuests />
+      ) : view === 'matrix' ? (
+        <StickyMatrix habits={habits} todayIndex={todayIndex} manageMode={manageMode} />
+      ) : (
+        <DailyList habits={habits} todayIndex={todayIndex} manageMode={manageMode} />
+      )}
+
+      {/* Add quest */}
+      <View style={{ height: 24 }} />
+      <Pressable onTap={() => setSheetOpen(true)} scale={0.98}>
+        <View style={[styles.addCard, { backgroundColor: colors.surfaceLowest, borderColor: colors.glassEdge }]}>
+          <LinearGradient
+            colors={[AppColors.primary, AppColors.primaryDeep]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.addPlusTile}
+          >
+            <StrokeIcon name="plus" size={20} color="#FFFFFF" strokeWidth={2.6} />
+          </LinearGradient>
+          <View style={{ width: 12 }} />
+          <View style={styles.flex1}>
+            <Text numberOfLines={1} style={[styles.addTitle, { color: colors.ink }]}>
+              Add a custom quest
+            </Text>
+            <Text numberOfLines={1} style={[styles.addSubtitle, { color: colors.muted }]}>
+              Name · category · time
+            </Text>
+          </View>
+          <StrokeIcon name="chevronRight" size={16} color={colors.muted} />
+        </View>
+      </Pressable>
+
+      <View style={{ height: 130 }} />
+
+      <AddQuestSheet
+        visible={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+      />
+    </ScrollView>
+  );
+}
+
+/* ── Status helper ─────────────────────────────────────────────────────────── */
+
+function statusOn(habitId: string, dayIndex: number): QuestStatus {
+  return selectStatusOf(useAppStore.getState(), habitId, dayIndex);
+}
+
+/* ── View tab ──────────────────────────────────────────────────────────────── */
+
+function ViewTab({
+  mode,
+  active,
+  onSelect,
+  ink,
+  muted,
+}: {
+  mode: ViewMode;
+  active: boolean;
+  onSelect: (m: ViewMode) => void;
+  ink: string;
+  muted: string;
+}) {
+  return (
+    <RnPressable onPress={() => onSelect(mode)} style={[styles.viewTab, active && styles.viewTabActive]}>
+      <StrokeIcon name={VIEW_TAB_ICONS[mode]} size={12} color={active ? '#FFFFFF' : muted} strokeWidth={2.2} />
+      <View style={{ width: 4 }} />
+      <Text numberOfLines={1} style={[styles.viewTabLabel, { color: active ? '#FFFFFF' : ink }]}>
+        {mode === 'matrix' ? 'Week' : 'Today'}
+      </Text>
+    </RnPressable>
+  );
+}
+
+/* ── Matrix cell ───────────────────────────────────────────────────────────── */
+
+function MatrixCell({
+  status,
+  isToday,
+  onPress,
+}: {
+  status: QuestStatus;
+  isToday: boolean;
+  onPress?: () => void;
+}) {
+  const size = 28;
+  let bg: string = AppColors.cardWhite;
+  let borderWidth = 1;
+  let borderColor: string = AppColors.cardBorderStrong;
+  if (isToday) {
+    bg = AppColors.cardWhite;
+    borderWidth = 1.5;
+    borderColor = AppColors.sky;
+  }
+  const inner =
+    status === QuestStatus.verified ? (
+      <StrokeIcon name="checkCircle" size={18} color={AppColors.sky} strokeWidth={1.8} />
+    ) : status === QuestStatus.missed ? (
+      <StrokeIcon name="close" size={14} color={AppColors.placeholder} strokeWidth={1.8} />
+    ) : isToday ? (
+      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: AppColors.primary }} />
+    ) : null;
+  return (
+    <RnPressable onPress={onPress} disabled={!isToday} style={{ width: CELL_WIDTH, alignItems: 'center' }}>
+      <View
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: bg,
+          borderWidth,
+          borderColor,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {inner}
+      </View>
+    </RnPressable>
+  );
+}
+
+/* ── Week matrix ───────────────────────────────────────────────────────────── */
+
+function StickyMatrix({
+  habits,
+  todayIndex,
+  manageMode,
+}: {
+  habits: Habit[];
+  todayIndex: number;
+  manageMode: boolean;
+}) {
+  const { isDark, colors } = useTheme();
+  const nav = useNav();
+
+  return (
+    <LiquidGlassCard padding={0}>
+      <View style={{ paddingHorizontal: 14, paddingTop: 14 }}>
+        {/* Day header */}
+        <View style={{ flexDirection: 'row' }}>
+          <View style={{ width: NAME_COL_WIDTH, paddingLeft: 2, justifyContent: 'center' }}>
+            <Text style={[styles.matrixHeaderLabel, { color: colors.muted }]}>QUEST</Text>
+          </View>
+          <View style={styles.flex1}>
+            <View style={{ flexDirection: 'row', gap: CELL_GAP }}>
+              {DAY_INITIALS.map((d, i) => (
+                <View key={`${d}-${i}`} style={{ width: CELL_WIDTH, alignItems: 'center', justifyContent: 'center' }}>
+                  <View
+                    style={[
+                      styles.dayCircle,
+                      i === todayIndex
+                        ? { backgroundColor: AppColors.primary }
+                        : { backgroundColor: 'transparent', borderWidth: 0.5, borderColor: colors.glassEdge },
+                    ]}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.8}
+                      style={[styles.dayCircleText, { color: i === todayIndex ? '#FFFFFF' : colors.muted }]}
+                    >
+                      {d}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+          {manageMode ? <View style={{ width: 34 }} /> : null}
+        </View>
+
+        <View style={{ height: 10 }} />
+
+        {/* Habit rows */}
+        {habits.map((habit) => (
+          <View key={habit.id} style={[styles.matrixRow, { borderTopColor: withAlpha(colors.ink, 0.06) }]}>
+            <View style={{ width: NAME_COL_WIDTH, paddingLeft: 2, justifyContent: 'center' }}>
+              <View style={styles.matrixNameRow}>
+                <Text style={{ fontSize: 15 }}>{habit.emoji}</Text>
+                <View style={{ width: 6 }} />
+                <View style={styles.flex1}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.matrixName, { color: colors.ink }]}>
+                    {habit.name}
+                  </Text>
+                  <Text numberOfLines={1} style={{ fontSize: 9.5, lineHeight: 13, color: colors.muted }}>
+                    {habit.time}
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <View style={styles.flex1}>
+              <View style={{ flexDirection: 'row', gap: CELL_GAP }}>
+                {DAY_INITIALS.map((_, d) => (
+                  <MatrixCell
+                    key={d}
+                    status={d <= todayIndex ? statusOn(habit.id, d) : QuestStatus.pending}
+                    isToday={d === todayIndex}
+                    onPress={
+                      d === todayIndex
+                        ? () => {
+                            if (statusOn(habit.id, d) !== QuestStatus.verified) nav.showProof(habit);
+                          }
+                        : undefined
+                    }
+                  />
+                ))}
+              </View>
+            </View>
+            {manageMode ? <ManageTrash habitId={habit.id} /> : null}
+          </View>
+        ))}
+      </View>
+
+      <View style={{ height: 14 }} />
+      <View style={styles.legendWrap}>
+        <LegendDot color={AppColors.rewardBlue} label="Verified" ink={colors.muted} />
+        <LegendDot color={withAlpha(colors.ink, 0.15)} label="Pending" ink={colors.muted} />
+        <LegendDot color={AppColors.primary} label="Today" ink={colors.muted} />
+      </View>
+    </LiquidGlassCard>
+  );
+}
+
+function cellStatus(current: QuestStatus, day: number, today: number): QuestStatus {
+  void day;
+  void today;
+  return current;
+}
+
+/* ── Today list ────────────────────────────────────────────────────────────── */
+
+function DailyList({
+  habits,
+  todayIndex,
+  manageMode,
+}: {
+  habits: Habit[];
+  todayIndex: number;
+  manageMode: boolean;
+}) {
+  const nav = useNav();
+  return (
+    <View style={{ paddingHorizontal: 16 }}>
+      {habits.map((habit) => {
+        const status = statusOn(habit.id, todayIndex);
+        const verified = status === QuestStatus.verified;
+        return (
+          <View key={habit.id} style={{ marginBottom: 10 }}>
+            <Pressable onTap={() => (verified ? nav.toast(`${habit.name} already verified ✓`) : nav.showProof(habit))} scale={0.98}>
+              <View style={[styles.listRow, { backgroundColor: AppColors.cardWhite, borderColor: AppColors.cardBorder }]}>
+                {/* Soft touchable checkbox — thin 1.5px border, elegant */}
+                {verified ? (
+                  <View style={styles.checkboxChecked}>
+                    <StrokeIcon name="check" size={14} color="#FFFFFF" strokeWidth={2.5} />
+                  </View>
+                ) : (
+                  <View style={styles.checkboxEmpty} />
+                )}
+                <View style={{ width: 12 }} />
+                <View style={styles.flex1}>
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.85}
+                    style={[styles.listRowName, { color: verified ? AppColors.placeholder : AppColors.ink, textDecorationLine: verified ? 'line-through' : 'none', marginRight: 8 }]}
+                  >
+                    {habit.name}
+                  </Text>
+                  <View style={{ height: 4 }} />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={styles.categoryTag}>
+                      <Text style={styles.categoryTagText}>
+                        <Text>{habit.category}</Text>
+                      </Text>
+                    </View>
+                    <View style={styles.durationBadge}>
+                      <StrokeIcon name="clock" size={10} color={AppColors.muted} strokeWidth={1.8} />
+                      <View style={{ width: 4 }} />
+                      <Text style={styles.durationText}>
+                        <Text>{habit.time}</Text>
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={{ width: 8 }} />
+                {!verified && (
+                  <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: withAlpha(AppColors.primary, 0.08), alignItems: 'center', justifyContent: 'center' }}>
+                    <StrokeIcon name="camera" size={14} color={AppColors.primary} strokeWidth={1.8} />
+                  </View>
+                )}
+              </View>
+            </Pressable>
+            {manageMode ? (
+              <View style={styles.manageRowUnder}>
+                <ManageTrash habitId={habit.id} />
+              </View>
+            ) : null}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function ManageTrash({ habitId }: { habitId: string }) {
+  return (
+    <RnPressable
+      onPress={() => void useAppStore.getState().removeHabit(habitId)}
+      hitSlop={6}
+      style={{ width: 34, alignItems: 'center' }}
+    >
+      <StrokeIcon name="trash" size={16} color={AppColors.error} strokeWidth={2} />
+    </RnPressable>
+  );
+}
+
+function LegendDot({ color, label, ink }: { color: string; label: string; ink: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />
+      <View style={{ width: 5 }} />
+      <Text numberOfLines={1} style={{ fontSize: 10.5, lineHeight: 14, fontWeight: '600', fontFamily: fontFamilyFor('w600'), color: ink }}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function EmptyQuests() {
+  const nav = useNav();
+  const { colors } = useTheme();
+  return (
+    <View style={styles.emptyWrap}>
+      <QubiMascot size={64} celebrating />
+      <View style={{ height: 16 }} />
+      <Text style={[styles.emptyTitle, { color: colors.ink }]}>No Quests Created Yet!</Text>
+      <View style={{ height: 8 }} />
+      <Text style={[styles.emptyBody, { color: colors.muted }]}>Ask Qubi to build your custom routine.</Text>
+      <View style={{ height: 18 }} />
+      <PrimaryPillButton label="📋 Create Routine with Qubi" onPress={nav.openQubi} />
+    </View>
+  );
+}
+
+/* ── Add quest sheet ───────────────────────────────────────────────────────── */
+
+function AddQuestSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { isDark, colors } = useTheme();
+  const [name, setName] = useState('');
+  const [time, setTime] = useState('8:00 AM');
+  const [category, setCategory] = useState<[string, string]>(CATEGORIES[1]);
+
+  const canAdd = name.trim().length > 1;
+
+  const submit = async () => {
+    if (!canAdd) return;
+    await useAppStore.getState().addHabit({ name: name.trim(), category: category[1], time: time.trim(), emoji: category[0] });
+    setName('');
+    onClose();
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.sheetRoot}>
+        <Pressable onTap={onClose} scale={1}>
+          <View style={styles.sheetBackdrop} />
+        </Pressable>
+        <View style={[styles.sheetBody, { backgroundColor: isDark ? AppColors.glassDark : '#FFFFFF' }]}>
+          <View style={styles.grabberWrap}>
+            <View style={[styles.grabber, { backgroundColor: withAlpha(colors.muted, 0.3) }]} />
+          </View>
+          <Text style={[styles.sheetTitle, { color: colors.ink }]}>New Custom Quest</Text>
+          <View style={{ height: 14 }} />
+
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="Quest name (e.g. Morning Run)"
+            placeholderTextColor={AppColors.mutedLight}
+            style={[styles.input, { backgroundColor: colors.surfaceContainer, borderColor: colors.glassEdge, color: colors.ink }]}
+          />
+          <View style={{ height: 12 }} />
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {CATEGORIES.map(([emoji, cat]) => {
+              const activeCat = category[1] === cat;
+              return (
+                <RnPressable
+                  key={cat}
+                  onPress={() => setCategory([emoji, cat])}
+                  style={{ marginRight: 8, marginBottom: 8 }}
+                >
+                  <View
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: AppSpacing.radiusPill,
+                      borderWidth: 1,
+                      backgroundColor: activeCat ? withAlpha(AppColors.rewardBlue, 0.12) : colors.surfaceContainer,
+                      borderColor: activeCat ? withAlpha(AppColors.rewardBlue, 0.5) : 'transparent',
+                    }}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        fontSize: 13,
+                        lineHeight: 17,
+                        fontWeight: '700',
+                        fontFamily: fontFamilyFor('w700'),
+                        color: activeCat ? AppColors.rewardInkMid : colors.ink,
+                      }}
+                    >
+                      {emoji} {cat}
+                    </Text>
+                  </View>
+                </RnPressable>
+              );
+            })}
+          </View>
+
+          <View style={{ height: 12 }} />
+
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={[styles.timeIconBox, { backgroundColor: colors.surfaceContainer, borderColor: colors.glassEdge }]}>
+              <StrokeIcon name="clock" size={18} color={AppColors.rewardInkMid} />
+            </View>
+            <View style={{ width: 8 }} />
+            <TextInput
+              value={time}
+              onChangeText={setTime}
+              placeholder="7:00 AM"
+              placeholderTextColor={AppColors.mutedLight}
+              style={[styles.input, styles.flex1, { backgroundColor: colors.surfaceContainer, borderColor: colors.glassEdge, color: colors.ink }]}
+            />
+          </View>
+
+          <View style={{ height: 18 }} />
+          <Pressable onTap={() => void submit()} scale={canAdd ? 0.97 : 1}>
+            <LinearGradient
+              colors={canAdd ? [AppColors.primary, AppColors.primaryDeep] : ['#9CA3AF', '#9CA3AF']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.sheetAddButton}
+            >
+              <Text style={styles.sheetAddButtonText}>Add Quest</Text>
+            </LinearGradient>
+          </Pressable>
+          <View style={{ height: 12 }} />
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+/* ── Styles ────────────────────────────────────────────────────────────────── */
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  flex1: { flex: 1, minWidth: 0 },
+  scrollContent: { paddingBottom: 0 },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  headerTitle: { fontSize: 22, lineHeight: 27, fontFamily: fontFamilyFor('w800'), letterSpacing: -0.5 },
+  headerSubtitle: { fontSize: 12.5, lineHeight: 17, fontFamily: fontFamilyFor('w500') },
+  manageBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+
+  completedRow: { paddingHorizontal: 20, marginTop: 12 },
+  completedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+  },
+  completedPillText: { fontSize: 12, lineHeight: 16, fontWeight: '700', fontFamily: fontFamilyFor('w700') },
+
+  viewTabs: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    borderRadius: 999,
+    padding: 3,
+    marginTop: 14,
+    marginHorizontal: 20,
+  },
+  viewTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 999,
+    minWidth: 92,
+  },
+  viewTabActive: { backgroundColor: AppColors.primary },
+  viewTabLabel: { fontSize: 12, lineHeight: 16, fontWeight: '700', fontFamily: fontFamilyFor('w700') },
+
+  matrixHeaderLabel: { fontSize: 9.5, lineHeight: 13, fontWeight: '800', letterSpacing: 1.2, fontFamily: fontFamilyFor('w800') },
+  dayCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayCircleText: { fontSize: 10.5, lineHeight: 14, fontWeight: '800', fontFamily: fontFamilyFor('w800') },
+  matrixRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+  },
+  matrixNameRow: { flexDirection: 'row', alignItems: 'center' },
+  matrixName: { fontSize: 13.5, lineHeight: 18, fontWeight: '700', fontFamily: fontFamilyFor('w700') },
+
+  legendWrap: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+    paddingBottom: 14,
+  },
+
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    backgroundColor: '#FFFFFF',
+  },
+  checkboxEmpty: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    borderColor: AppColors.cardBorderStrong,
+    backgroundColor: '#FFFFFF',
+  },
+  checkboxChecked: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: AppColors.sky,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: AppColors.canvas,
+    borderWidth: 1,
+    borderColor: AppColors.cardBorder,
+  },
+  categoryTagText: { fontSize: 10, lineHeight: 13, fontWeight: '700', fontFamily: fontFamilyFor('w700'), color: AppColors.muted },
+  durationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: AppColors.cardBorder,
+  },
+  durationText: { fontSize: 10, lineHeight: 12, fontFamily: fontFamilyFor('w600'), color: AppColors.muted },
+  listIconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listRowName: { fontSize: 14, lineHeight: 19, fontWeight: '700', fontFamily: fontFamilyFor('w700') },
+
+  manageRowUnder: { alignItems: 'flex-end', paddingRight: 8, marginTop: -4 },
+
+  addCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 14,
+  },
+  addPlusTile: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addTitle: { fontSize: 14.5, lineHeight: 19, fontWeight: '700', fontFamily: fontFamilyFor('w700') },
+  addSubtitle: { fontSize: 12, lineHeight: 16, fontFamily: fontFamilyFor('w500') },
+
+  emptyWrap: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+  },
+  emptyTitle: { fontSize: 17, lineHeight: 22, fontFamily: fontFamilyFor('w800') },
+  emptyBody: { fontSize: 13, lineHeight: 18, fontFamily: fontFamilyFor('w500'), textAlign: 'center' },
+
+  /* Sheet */
+  sheetRoot: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.65)' },
+  sheetBackdrop: { flex: 1 },
+  sheetBody: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 28,
+  },
+  grabberWrap: { alignItems: 'center', marginBottom: 12 },
+  grabber: { width: 36, height: 4, borderRadius: 2 },
+  sheetTitle: { fontSize: 18, lineHeight: 23, fontWeight: '700', fontFamily: fontFamilyFor('w700') },
+  input: {
+    borderRadius: 14,
+    borderWidth: 1,
+    fontSize: 14.5,
+    lineHeight: 19,
+    fontWeight: '600',
+    fontFamily: fontFamilyFor('w600'),
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  timeIconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetAddButton: {
+    height: 50,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetAddButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800', fontFamily: fontFamilyFor('w800') },
+});
