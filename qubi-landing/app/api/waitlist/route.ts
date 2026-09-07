@@ -12,11 +12,7 @@ export async function POST(req: Request) {
     }
 
     const supabase = getSupabase();
-    const { error } = await supabase
-      .from("waitlist")
-      .insert({ email })
-      .select("id")
-      .single();
+    const { error } = await supabase.from("waitlist").insert({ email });
 
     if (error) {
       // Duplicate email (unique constraint) — treat as success so the form feels friendly

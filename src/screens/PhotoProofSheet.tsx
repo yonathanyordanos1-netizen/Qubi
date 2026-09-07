@@ -31,10 +31,10 @@ import { Pressable } from '../components/Pressable';
 import { StrokeIcon } from '../components/AppIcons';
 import { CameraIcon } from '../components/CameraIcon';
 import { CrossModal } from '../components/CrossModal';
-import { RewardSheet, type RewardInfo } from '../components/gamification/RewardSheet';
+import { ProofSuccessModal, type ProofSuccessInfo } from '../components/ProofSuccessModal';
 import { QubiMascot } from '../components/QubiMascot';
 import { useNav } from './navContext';
-import { useAppStore, selectPendingTodayHabits } from '../state/appStore';
+import { useAppStore, selectPendingTodayHabits, selectCompletedCount } from '../state/appStore';
 import { useSettingsStore } from '../state/settingsStore';
 import { OpenRouterServiceInstance, VisionVerdict, AiHttpException } from '../services/openRouter';
 import { SupabaseServiceInstance } from '../services/supabase';
@@ -99,7 +99,7 @@ function AutonomousProofSheet({
   const [busy, setBusy] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
   const [result, setResult] = useState<VisionVerificationResult | null>(null);
-  const [reward, setReward] = useState<RewardInfo | null>(null);
+  const [reward, setReward] = useState<ProofSuccessInfo | null>(null);
 
   const cameraRef = useRef<CameraView | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
@@ -139,6 +139,7 @@ function AutonomousProofSheet({
         if (matched != null) {
           useSettingsStore.getState().celebrate();
           const xpBefore = useAppStore.getState().xp;
+          const completionsBefore = selectCompletedCount(useAppStore.getState());
           await useAppStore.getState().verifyHabit(matched.id);
           const after = useAppStore.getState();
           setReward({
@@ -147,6 +148,8 @@ function AutonomousProofSheet({
             xpBefore,
             xpAfter: after.xp,
             streak: after.streak,
+            completionsBefore,
+            completionsAfter: selectCompletedCount(after),
           });
         }
       }
@@ -350,9 +353,9 @@ function AutonomousProofSheet({
         </View>
 
         {reward != null ? (
-          <RewardSheet
+          <ProofSuccessModal
             info={reward}
-            onClose={() => setReward(null)}
+            onContinue={onClose}
             onSnapAnother={() => {
               setReward(null);
               setResult(null);
@@ -549,7 +552,7 @@ export default function PhotoProofSheet({ habit, onClose }: { habit: Habit; onCl
   const [verdict, setVerdict] = useState<VisionVerdict | null>(null);
   const [busy, setBusy] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
-  const [reward, setReward] = useState<RewardInfo | null>(null);
+  const [reward, setReward] = useState<ProofSuccessInfo | null>(null);
 
   const cameraRef = useRef<CameraView | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
@@ -587,6 +590,7 @@ export default function PhotoProofSheet({ habit, onClose }: { habit: Habit; onCl
         }
         useSettingsStore.getState().celebrate();
         const xpBefore = useAppStore.getState().xp;
+        const completionsBefore = selectCompletedCount(useAppStore.getState());
         await useAppStore.getState().verifyHabit(habit.id, proofPath ?? undefined);
         const after = useAppStore.getState();
         setReward({
@@ -595,11 +599,13 @@ export default function PhotoProofSheet({ habit, onClose }: { habit: Habit; onCl
           xpBefore,
           xpAfter: after.xp,
           streak: after.streak,
+          completionsBefore,
+          completionsAfter: selectCompletedCount(after),
         });
       }
 
       setVerdict(v);
-      setStage(v.verified ? 'verified' : 'rejected');
+      setStage(v.verified ? 'rejected' : 'rejected');
     },
     [habit.id, habit.name],
   );
@@ -721,19 +727,17 @@ export default function PhotoProofSheet({ habit, onClose }: { habit: Habit; onCl
               />
             ) : stage === 'analyzing' ? (
               <AnalyzingStage habit={habit} captured={captured} demoCapture={demoCapture} />
-            ) : stage === 'verified' ? (
-              <VerifiedStage verdict={verdict!} onClose={onClose} />
             ) : (
               <RejectedStage verdict={verdict!} onCancel={onClose} onRetake={() => nav.toast('Retake')} bottomInset={insets.bottom} />
             )}
           </View>
         </View>
 
-        {/* Duolingo-style reward overlay */}
+        {/* Duolingo-style reward overlay — Continue returns straight to the dashboard */}
         {reward != null ? (
-          <RewardSheet
+          <ProofSuccessModal
             info={reward}
-            onClose={() => setReward(null)}
+            onContinue={onClose}
             onSnapAnother={() => {
               setReward(null);
               setStage('camera');
@@ -930,130 +934,8 @@ function AnalyzingStage({
   );
 }
 
-/* ── Verified stage ────────────────────────────────────────── */
-
-const CONFETTI_COLORS = [AppColors.rewardBlue, '#F59E0B', '#22D3EE', '#185FA5'];
-
-function VerifiedStage({ verdict, onClose }: { verdict: VisionVerdict; onClose: () => void }) {
-  const bob = useSharedValue(0);
-  useEffect(() => {
-    bob.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-      ),
-      -1,
-    );
-  }, [bob]);
-
-  return (
-    <View style={styles.stagePadCenteredNoGrow}>
-      <View style={styles.celebrationStack}>
-        <MascotPulse bob={bob} />
-        <TreatConfetti />
-      </View>
-      <View style={{ height: 14 }} />
-      <View style={styles.matchChip}>
-        <StrokeIcon name="checkCircle" size={18} color={AppColors.rewardBlue} strokeWidth={2.4} />
-        <View style={{ width: 6 }} />
-        <Text numberOfLines={1} style={[styles.matchChipText, { color: AppColors.rewardInkMid }]}>
-          {Math.round(verdict.confidence * 100)}% Match · Verified!
-        </Text>
-      </View>
-      <View style={{ height: 18 }} />
-      <View style={styles.xpCard}>
-        <Text style={styles.xpBig}>+50 XP</Text>
-        <View style={{ height: 10 }} />
-        <LevelProgress />
-      </View>
-      <View style={{ height: 10 }} />
-      <Text style={styles.treatLine}>Treat earned · Streak +1 · Rank protected 🔥</Text>
-      <View style={{ height: 12 }} />
-      <Text style={styles.verdictReason}>{verdict.reason}</Text>
-      <View style={styles.flex} />
-      <DoneButton label="Done — Back to Dashboard" onPress={onClose} />
-    </View>
-  );
-}
-
-function MascotPulse({ bob }: { bob: SharedValue<number> }) {
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(bob.value, [0, 1], [1, 1.06]) }],
-  }));
-  return (
-    <Animated.View style={style}>
-      <QubiMascot size={110} celebrating bob={false} />
-    </Animated.View>
-  );
-}
-
-function TreatConfetti() {
-  return (
-    <View pointerEvents="none" style={styles.confettiWrap}>
-      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
-        <Spark key={i} index={i} />
-      ))}
-    </View>
-  );
-}
-
-function Spark({ index }: { index: number }) {
-  const angle = (index * Math.PI) / 5;
-  const radius = 48 + (index % 3) * 18;
-  const dx = Math.cos(angle) * radius;
-  const dy = Math.sin(angle) * radius;
-  const p = useSharedValue(0);
-
-  useEffect(() => {
-    const dur = 850 + index * 70;
-    p.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: dur, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: dur, easing: Easing.inOut(Easing.ease) }),
-      ),
-      -1,
-    );
-  }, [p, index]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ translateX: dx * p.value }, { translateY: dy * p.value }],
-    opacity: 0.15 + 0.85 * p.value,
-  }));
-
-  return (
-    <View style={styles.sparkCenter}>
-      <Animated.View style={style}>
-        <StrokeIcon
-          name={index % 2 === 0 ? 'sparkle' : 'star'}
-          size={10 + (index % 3) * 3}
-          color={CONFETTI_COLORS[index % CONFETTI_COLORS.length]}
-          strokeWidth={2}
-        />
-      </Animated.View>
-    </View>
-  );
-}
-
-function LevelProgress() {
-  const xp = useAppStore((s) => s.xp);
-  const level = 1 + Math.floor(xp / 500);
-  const intoLevel = xp - (level - 1) * 500;
-  const progress = Math.min(1, Math.max(0, intoLevel / 500));
-  return (
-    <View>
-      <View style={styles.levelRow}>
-        <Text style={styles.levelLabel}>LEVEL {level}</Text>
-        <Text style={styles.levelNext}>LEVEL {level + 1}</Text>
-      </View>
-      <View style={{ height: 8 }} />
-      <View style={styles.levelTrack}>
-        <View style={[styles.levelFill, { width: `${Math.round(progress * 100)}%` }]} />
-      </View>
-      <View style={{ height: 8 }} />
-      <Text style={styles.levelXp}>{xp} XP</Text>
-    </View>
-  );
-}
+/* ── Verified stage removed — the ProofSuccessModal reward overlay is now the
+      single post-capture celebration; CONTINUE returns to the dashboard. ── */
 
 /* ── Rejected stage ────────────────────────────────────────── */
 
@@ -1121,9 +1003,7 @@ function DoneButton({ label, onPress }: { label: string; onPress: () => void }) 
       </LinearGradient>
     </Pressable>
   );
-}
-
-/* ── Styles ────────────────────────────────────────────────── */
+}/* ── Styles ────────────────────────────────────────────────── */
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
@@ -1285,10 +1165,7 @@ const styles = StyleSheet.create({
   },
   analyzeTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '700', fontFamily: fontFamilyFor('w700') },
   analyzeSubtitle: { color: AppColors.mutedLight, fontSize: 12.5, textAlign: 'center', fontWeight: '400', fontFamily: fontFamilyFor('w500') },
-  /* Verified */
-  celebrationStack: { width: 220, height: 170, alignItems: 'center', justifyContent: 'center' },
-  confettiWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
-  sparkCenter: { position: 'absolute' },
+  /* Verified (styles kept for the shared match chip used by AutoResultStage) */
   matchChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1298,34 +1175,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   matchChipText: { fontSize: 14, fontWeight: '700', fontFamily: fontFamilyFor('w700'), lineHeight: 19 },
-  xpCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingHorizontal: 28,
-    paddingVertical: 18,
-    minWidth: 220,
-    shadowColor: AppColors.rewardBlue,
-    shadowOpacity: 0.15,
-    shadowRadius: 30,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 10,
-  },
-  xpBig: {
-    color: AppColors.rewardInkMid,
-    fontSize: 40,
-    lineHeight: 46,
-    fontWeight: '800',
-    letterSpacing: -1,
-    textAlign: 'center',
-    fontFamily: fontFamilyFor('w800'),
-  },
-  levelRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  levelLabel: { color: AppColors.muted, fontSize: 11, fontWeight: '800', letterSpacing: 0.8, fontFamily: fontFamilyFor('w800') },
-  levelNext: { color: AppColors.mutedLight, fontSize: 11, fontWeight: '700', fontFamily: fontFamilyFor('w700') },
-  levelTrack: { height: 6, borderRadius: 5, backgroundColor: '#E8E9EA', overflow: 'hidden' },
-  levelFill: { height: 6, backgroundColor: AppColors.rewardBlue },
-  levelXp: { color: AppColors.muted, fontSize: 11.5, lineHeight: 15, fontWeight: '600', textAlign: 'center', fontFamily: fontFamilyFor('w600') },
-  treatLine: { color: AppColors.mutedLight, fontSize: 13, lineHeight: 17, fontWeight: '600', fontFamily: fontFamilyFor('w600'), textAlign: 'center' },
   verdictReason: {
     color: AppColors.mutedLight,
     fontSize: 12,
@@ -1334,8 +1183,6 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     fontFamily: fontFamilyFor('w500'),
   },
-  doneButton: { height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  doneButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', fontFamily: fontFamilyFor('w800') },
   /* Rejected */
   rejectChip: {
     flexDirection: 'row',
