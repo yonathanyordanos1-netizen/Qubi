@@ -16,9 +16,10 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Select latest Xcode
+      - name: Select Xcode 16
         run: |
-          XCODE=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          XCODE=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XCODE" ]; then XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1); fi
           echo "Selected: $XCODE"
           sudo xcode-select -s "$XCODE"
           xcodebuild -version
