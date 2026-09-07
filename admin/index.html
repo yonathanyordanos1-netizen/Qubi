@@ -318,10 +318,11 @@
 
     function showToast(message, className) {
       const toast = className.includes('error') ? errorToast : successToast;
-      toast.querySelector('div')?.classList.add(className);
+      const hide = () => toast.classList.remove('show');
+      toast.classList.remove('show');
       toast.textContent = message;
       toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 5000);
+      setTimeout(hide, 5000);
     }
   </script>
 </body>
