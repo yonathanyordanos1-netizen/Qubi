@@ -24,8 +24,8 @@ jobs:
 
       - name: Build Xcode Archive
         run: |
-          xcodebuild -workspace ios/qubi-mobile.xcworkspace \
-            -scheme qubi-mobile \
+          xcodebuild -workspace ios/Qubi.xcworkspace \
+            -scheme Qubi \
             -configuration Release \
             -sdk iphoneos \
             CODE_SIGNING_ALLOWED=NO \
