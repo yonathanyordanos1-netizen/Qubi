@@ -91,6 +91,12 @@ export async function registerPushToken(): Promise<void> {
     const tokenString =
       typeof token === 'object' && token != null && 'data' in token ? String(token.data) : '';
     if (tokenString.length === 0) return;
+    const userId = SupabaseServiceInstance.userId;
+    if (userId) {
+      await SupabaseServiceInstance.client
+        .from('user_push_tokens')
+        .upsert({ user_id: userId, expo_push_token: tokenString, platform: Platform.OS });
+    }
     await SupabaseServiceInstance.upsertProfile({ push_token: tokenString });
   } catch {
     // Push is best-effort — never block boot (Expo Go Android, offline, etc.)

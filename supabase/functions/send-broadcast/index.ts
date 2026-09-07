@@ -1,6 +1,8 @@
-import type { HttpsRequest } from '@cloudflare/platform-sdk';
-import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
-import type { EdgeFunctionRequest } from '@supabase/functions-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 interface BroadcastPayload {
   title: string;
@@ -40,7 +42,6 @@ async function sendExpoPush(token: string, title: string, body: string): Promise
   });
 
   const data = await res.json();
-  // Consider success if data error is not present
   return !data.error;
 }
 

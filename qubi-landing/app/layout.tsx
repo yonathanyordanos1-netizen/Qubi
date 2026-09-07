@@ -22,7 +22,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://qubi-questify.app"),
+  metadataBase: new URL("https://qubi-beta.vercel.app"),
   title: "Qubi — Turn daily habits into unbeatable streaks.",
   description:
     "Qubi gamifies your daily routines with XP, ranks, and live leaderboards. Upload photo proof of your completed tasks, stay accountable, and level up your life in real time.",
