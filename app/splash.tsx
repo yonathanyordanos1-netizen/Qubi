@@ -1,19 +1,16 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated as RNAnimated, Easing as RNEasing, StyleSheet, View, Image, Text, useWindowDimensions } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSpring } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSpring, withTiming, withDelay } from 'react-native-reanimated';
 import * as SplashScreen from 'expo-splash-screen';
 import { fontFamilyFor } from '../src/theme/typography';
 
-// ═══ SPEC §1 — SINGLE SOURCE OF TRUTH FOR THE QUBI LAUNCH SPLASH ═══
-// Rendered the instant the root layout mounts — BEFORE any auth state
-// evaluation, Supabase getSession() fetch, or navigation handoff.
-// • Edge-to-edge: StyleSheet.absoluteFillObject extends under status bar / notch / home indicator
-// • Canvas: Duo Green #58CC02 (brand mascot green) with a full-bleed Qubi_2.jpg "cover" fill
-// • Warm radial glow + Duolingo breathing pulse (reanimated spring loop, scale 1.0 → 1.04)
-// • Holds ≥ 1.8s while supabase.auth.getSession() resolves in the parent, then a
-//   300ms cross-fade into the target screen (gated handoff: session → (tabs) · no session → intro/auth)
-//   followed by SplashScreen.hideAsync().
+// ═══ QUBI LAUNCH SPLASH — Duolingo style ═══
+// Solid Duo Green canvas, big mascot springs in with a playful overshoot,
+// "Qubi" wordmark bounces up right after, tagline pill fades in, and a
+// white loading bar sweeps while the app boots behind it. No full-bleed
+// photo — flat brand green exactly like Duolingo's launch screen.
+// Timing contract preserved: holds ≥ minimumDuration, then a 300ms
+// cross-fade into the target screen + SplashScreen.hideAsync().
 const QUBI = require('../Qubi/Qubi_2.jpg');
 
 export interface SplashProps {
@@ -29,18 +26,42 @@ export function Splash({ onFinish, minimumDuration = 1800, maxWaitMs = 2500, bac
   const finishedRef = useRef(false);
   const fadeStartedRef = useRef(false);
 
-  // Duolingo breathing — subtle continuous 3D pulse via reanimated SPRING physics (scale 1.0 → 1.04)
-  const breathe = useSharedValue(1);
-  useEffect(() => {
-    breathe.value = withRepeat(
-      withSpring(1.04, { damping: 11, stiffness: 90, mass: 1 }),
-      -1,
-      true,
-    );
-  }, [breathe]);
+  // Mascot: spring pop-in (0 → overshoot → 1), then a gentle infinite bounce.
+  const pop = useSharedValue(0);
+  const bounce = useSharedValue(0);
+  // Wordmark rises in just after the mascot lands.
+  const wordUp = useSharedValue(26);
+  const wordIn = useSharedValue(0);
+  // Tagline pill fades/scales in last.
+  const tagIn = useSharedValue(0);
+  // Loading bar sweep.
+  const bar = useSharedValue(0);
 
-  const breatheStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: breathe.value }],
+  useEffect(() => {
+    pop.value = withSpring(1, { damping: 9, stiffness: 130, mass: 1 });
+    bounce.value = withDelay(
+      650,
+      withRepeat(withTiming(1, { duration: 1100 }), -1, true),
+    );
+    wordUp.value = withDelay(250, withSpring(0, { damping: 14, stiffness: 160 }));
+    wordIn.value = withDelay(250, withTiming(1, { duration: 320 }));
+    tagIn.value = withDelay(600, withSpring(1, { damping: 13, stiffness: 150 }));
+    bar.value = withRepeat(withTiming(1, { duration: 1100 }), -1);
+  }, [pop, bounce, wordUp, wordIn, tagIn, bar]);
+
+  const mascotStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: Math.max(0.01, pop.value) }, { translateY: -8 * bounce.value }],
+  }));
+  const wordStyle = useAnimatedStyle(() => ({
+    opacity: wordIn.value,
+    transform: [{ translateY: wordUp.value }],
+  }));
+  const tagStyle = useAnimatedStyle(() => ({
+    opacity: tagIn.value,
+    transform: [{ scale: Math.max(0.01, tagIn.value) }],
+  }));
+  const barStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: -70 + bar.value * (Math.min(width, 480) - 140 + 140) }],
   }));
 
   const complete = useMemo(
@@ -57,7 +78,6 @@ export function Splash({ onFinish, minimumDuration = 1800, maxWaitMs = 2500, bac
     () => () => {
       if (fadeStartedRef.current) return;
       fadeStartedRef.current = true;
-      // Spec: exactly 300ms smooth cross-fade
       RNAnimated.timing(overlayOpacity, { toValue: 0, duration: 300, easing: RNEasing.inOut(RNEasing.ease), useNativeDriver: true }).start(() => complete());
     },
     [overlayOpacity, complete],
@@ -81,64 +101,38 @@ export function Splash({ onFinish, minimumDuration = 1800, maxWaitMs = 2500, bac
         { width, height, backgroundColor, opacity: overlayOpacity, alignItems: 'center', justifyContent: 'center' },
       ]}
     >
-      {/* Full-bleed Qubi_2.jpg — edge-to-edge cover, extends under status bar / notch / home indicator */}
-      <Image
-        source={QUBI}
-        style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]}
-        resizeMode="cover"
-        accessible={false}
-      />
-      {/* Green scrim so the white squircle + wordmark pop on any Qubi_2.jpg crop */}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor, opacity: 0.14 }]} pointerEvents="none" />
-      {/* Warm radial glow behind the mascot — soft-focus calm */}
-      <LinearGradient
-        colors={['rgba(255,255,255,0.55)', 'rgba(88,204,2,0)']}
-        style={styles.glow}
-        pointerEvents="none"
-      />
+      {/* Soft white halo behind the mascot */}
+      <View style={styles.halo} pointerEvents="none" />
 
-      {/* Center column: breathing 120×120 mascot squircle + Qubi wordmark — strict center alignment */}
-      <View style={[styles.center, { width: '100%', alignSelf: 'center' }]}>
-        <Animated.View style={breatheStyle}>
-          <View style={styles.squircle}>
-            <Image
-              source={QUBI}
-              style={[styles.mascot, { alignSelf: 'center' }]}
-              resizeMode="cover"
-              accessible
-              accessibilityLabel="Qubi mascot"
-            />
+      <View style={styles.center}>
+        <Animated.View style={mascotStyle}>
+          <View style={styles.mascotRing}>
+            <Image source={QUBI} style={styles.mascot} resizeMode="cover" accessible accessibilityLabel="Qubi mascot" />
           </View>
         </Animated.View>
 
-        {/* Typography: Qubi bold white rounded geometric 34/900/-0.5 + tagline */}
-        <Text
-          style={{
-            color: '#FFFFFF',
-            fontSize: 34,
-            fontWeight: '900',
-            letterSpacing: -0.5,
-            textAlign: 'center',
-            fontFamily: fontFamilyFor('w800'),
-          }}
-        >
-          <Text>{'Qubi'}</Text>
-        </Text>
-        <View style={{ height: 8 }} />
-        <View style={{ backgroundColor: 'rgba(255,255,255,0.22)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999 }}>
-          <Text
-            style={{
-              color: '#FFFFFF',
-              fontSize: 13,
-              fontWeight: '700',
-              letterSpacing: 0.4,
-              textAlign: 'center',
-              fontFamily: fontFamilyFor('w700'),
-            }}
-          >
-            <Text>{'Tiny habits, daily wins'}</Text>
+        <View style={{ height: 18 }} />
+
+        <Animated.View style={wordStyle}>
+          <Text style={styles.wordmark}>
+            <Text>{'Qubi'}</Text>
           </Text>
-        </View>
+        </Animated.View>
+
+        <View style={{ height: 10 }} />
+
+        <Animated.View style={tagStyle}>
+          <View style={styles.tagPill}>
+            <Text style={styles.tagText}>
+              <Text>{'Tiny habits, daily wins'}</Text>
+            </Text>
+          </View>
+        </Animated.View>
+      </View>
+
+      {/* Loading bar pinned near the bottom */}
+      <View style={styles.barTrack} pointerEvents="none">
+        <Animated.View style={[styles.barFill, barStyle]} />
       </View>
     </RNAnimated.View>
   );
@@ -149,35 +143,77 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Warm glow halo — centered on the mascot (slightly above screen center due to the wordmark)
-  glow: {
+  halo: {
     position: 'absolute',
-    width: 320,
-    height: 320,
-    borderRadius: 160,
+    width: 340,
+    height: 340,
+    borderRadius: 170,
     top: '50%',
-    marginTop: -200,
+    marginTop: -230,
     left: '50%',
-    marginLeft: -160,
+    marginLeft: -170,
+    backgroundColor: 'rgba(255,255,255,0.22)',
   },
-  squircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 32,
+  mascotRing: {
+    width: 184,
+    height: 184,
+    borderRadius: 92,
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
+    borderWidth: 6,
+    borderColor: 'rgba(255,255,255,0.85)',
     shadowColor: '#1F5C00',
-    shadowOpacity: 0.25,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   mascot: {
-    width: 120,
-    height: 120,
-    borderRadius: 32,
+    width: 172,
+    height: 172,
+    borderRadius: 86,
+  },
+  wordmark: {
+    color: '#FFFFFF',
+    fontSize: 46,
+    fontWeight: '900',
+    letterSpacing: -1,
+    textAlign: 'center',
+    fontFamily: fontFamilyFor('w800'),
+    textShadowColor: 'rgba(31,92,0,0.35)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 0,
+  },
+  tagPill: {
+    backgroundColor: 'rgba(255,255,255,0.24)',
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 999,
+  },
+  tagText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textAlign: 'center',
+    fontFamily: fontFamilyFor('w700'),
+  },
+  barTrack: {
+    position: 'absolute',
+    bottom: 72,
+    width: 180,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: 'rgba(255,255,255,0.28)',
+    overflow: 'hidden',
+  },
+  barFill: {
+    width: 70,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FFFFFF',
   },
 });
 

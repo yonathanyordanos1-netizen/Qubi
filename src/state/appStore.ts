@@ -379,6 +379,9 @@ function applyPersisted(json: Record<string, unknown>, base: AppShape): Partial<
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v != null && !Array.isArray(v);
 const boolOr = (v: unknown, d: boolean) => (typeof v === 'boolean' ? v : d);
 const strOr = (v: unknown, d: string) => (typeof v === 'string' ? v : d);
+/** Like strOr but treats blank/whitespace-only strings as missing — local wins. */
+const nonBlankOr = (v: unknown, d: string) =>
+  typeof v === 'string' && v.trim().length > 0 ? v : d;
 const numOr = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
 const strOrNull = (v: unknown) => (typeof v === 'string' ? v : null);
 
@@ -444,8 +447,10 @@ export const useAppStore = create<
         const profile = await svc.fetchProfile();
         const patch: Partial<AppShape> = {};
         if (profile != null) {
-          patch.displayName = strOr(profile['display_name'], get().displayName);
-          patch.username = strOr(profile['username'], get().username);
+          // Identity fields: never accept a blank row value over local state —
+          // otherwise a sign-out wipe + re-hydrate permanently erases the name.
+          patch.displayName = nonBlankOr(profile['display_name'], get().displayName);
+          patch.username = nonBlankOr(profile['username'], get().username);
           patch.email = strOr(profile['email'], get().email);
           patch.avatar = strOr(profile['avatar'], get().avatar);
           patch.xp = numOr(profile['xp'], get().xp);
@@ -824,12 +829,15 @@ export const useAppStore = create<
 
 async function syncProfile(s: AppShape): Promise<void> {
   try {
-    await SupabaseServiceInstance.upsertProfile({
-      display_name: s.displayName,
-      username: s.username,
+    // Never push blank identity fields — a wiped local state must not erase
+    // the good Supabase row (the sign-out/sign-in name-loss loop).
+    const payload: Record<string, unknown> = {
       onboarding_done: s.onboardingDone,
       responses: s.responses,
-    });
+    };
+    if (s.displayName.trim().length > 0) payload.display_name = s.displayName;
+    if (s.username.trim().length > 0) payload.username = s.username;
+    await SupabaseServiceInstance.upsertProfile(payload);
   } catch {}
 }
 

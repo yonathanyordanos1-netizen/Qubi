@@ -66,7 +66,7 @@ export function TasksPage() {
   const [manageMode, setManageMode] = useState(false);
 
   return (
-    <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.flex, { backgroundColor: isDark ? colors.canvas : '#FFF7ED' }]} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.flex1}>

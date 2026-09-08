@@ -42,6 +42,7 @@ jobs:
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_OPENROUTER_API_KEY: ${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}
           EXPO_PUBLIC_OPENROUTER_VISION_MODEL: ${{ secrets.EXPO_PUBLIC_OPENROUTER_VISION_MODEL }}
+          EXPO_PUBLIC_NVIDIA_API_KEY: ${{ secrets.EXPO_PUBLIC_NVIDIA_API_KEY }}
         run: npx expo prebuild --platform ios
 
       - name: Build Xcode Archive
@@ -50,6 +51,7 @@ jobs:
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_OPENROUTER_API_KEY: ${{ secrets.EXPO_PUBLIC_OPENROUTER_API_KEY }}
           EXPO_PUBLIC_OPENROUTER_VISION_MODEL: ${{ secrets.EXPO_PUBLIC_OPENROUTER_VISION_MODEL }}
+          EXPO_PUBLIC_NVIDIA_API_KEY: ${{ secrets.EXPO_PUBLIC_NVIDIA_API_KEY }}
         run: |
           xcodebuild -workspace ios/Qubi.xcworkspace \
             -scheme Qubi \

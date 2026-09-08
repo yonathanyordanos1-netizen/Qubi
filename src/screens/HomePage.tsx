@@ -86,6 +86,8 @@ export function HomePage() {
   const habits = useAppStore(selectHabits);
   const xp = useAppStore(s=>s.xp);
   const streak = useAppStore(s=>s.streak);
+  const displayName = useAppStore(s=>s.displayName);
+  const firstName = (displayName.split(' ')[0] ?? displayName).trim();
   const targetQuestCount = useAppStore(s=>s.targetQuestCount);
   const completedCount = useAppStore(selectCompletedCount);
   const weeklyBars = useAppStore(selectWeeklyXpBars);
@@ -111,7 +113,7 @@ export function HomePage() {
   // instead of double-celebrating the same quest.
 
   return (
-    <View style={styles.flex}>
+    <View style={[styles.flex, { backgroundColor: isDark ? colors.canvas : '#FFF7ED' }]}>
       <Animated.View style={[{ position:'absolute', top:0, left:0, right:0, height:56, zIndex:50 }, headerOpacity]}>
         <BlurView style={StyleSheet.absoluteFill} intensity={85} tint="light" blurMethod={Platform.OS==='android'?'dimezisBlurView':undefined} />
       </Animated.View>
@@ -131,9 +133,27 @@ export function HomePage() {
           />
         </View>
 
+        {/* Friendly greeting — Boons-style mascot hello card */}
+        <View style={{ paddingHorizontal:24, marginTop:12 }}>
+          <View style={[styles.helloCard, { backgroundColor: isDark ? colors.card : '#FFFFFF' }]}>
+            <QubiMascot size={54} bob={false} />
+            <View style={{ width:12 }} />
+            <View style={{ flex:1 }}>
+              <Text style={{ fontFamily: fontFamilyFor('w900'), fontSize:18, letterSpacing:-0.4, color: isDark ? '#F8FAFC' : '#1C1917' }}><Text>{firstName.length > 0 ? `Hey ${firstName}! 👋` : 'Hey there! 👋'}</Text></Text>
+              <View style={{ height:2 }} />
+              <Text style={{ fontFamily: fontFamilyFor('w600'), fontSize:12.5, color: colors.muted }}><Text>{streak > 0 ? `${streak}-day streak — keep it burning 🔥` : 'Snap your first proof to start a streak 🔥'}</Text></Text>
+            </View>
+            <Pressable onTap={()=>{ void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(()=>{}); nav.openQubi(); }} scale={0.95}>
+              <View style={styles.askQubiPill}>
+                <Text style={styles.askQubiText}><Text>Ask Qubi</Text></Text>
+              </View>
+            </Pressable>
+          </View>
+        </View>
+
         {/* Daily Goal Ring — bold circular XP */}
         <View style={{ alignItems:'center', marginTop:12 }}>
-          <SquircleCard radius={32} style={{ paddingVertical:24, paddingHorizontal:16, alignItems:'center', width:'92%' }}>
+          <SquircleCard radius={32} style={{ paddingVertical:24, paddingHorizontal:16, alignItems:'center', width:'92%', borderWidth:2, borderColor: isDark ? colors.glassEdge : '#000000', shadowColor:'#000', shadowOpacity: isDark ? 0 : 1, shadowRadius:0, shadowOffset:{width:4,height:4}, elevation: isDark ? 2 : 4, backgroundColor: isDark ? undefined : '#FFFFFF' }}>
             <Text style={{ fontFamily: fontFamilyFor('w800'), fontSize:13, letterSpacing:1.4, color: colors.muted }}><Text>DAILY GOAL</Text></Text>
             <View style={{ height:14 }} />
             <QubiGoalRing progress={progress} xp={todayXp} goal={dailyGoalXp} />
@@ -151,9 +171,9 @@ export function HomePage() {
           </SquircleCard>
         </View>
 
-        {/* Bonus Quest cards — glowing borders */}
+        {/* Bonus Quest cards — chunky Duolingo cards */}
         <View style={{ paddingHorizontal:24, marginTop:14, gap:10 }}>
-          <SquircleCard radius={24} glowing="bonus" style={{ padding:14 }}>
+          <SquircleCard radius={24} glowing="bonus" style={{ padding:14, borderWidth:2, borderColor: isDark ? colors.glassEdge : '#000000', backgroundColor: isDark ? undefined : '#FFFFFF' }}>
             <View style={{ flexDirection:'row', alignItems:'center' }}>
               <View style={{ width:36, height:36, borderRadius:12, backgroundColor: withAlpha(AppColors.sky,0.14), alignItems:'center', justifyContent:'center' }}>
                 <Ionicons name="heart" size={18} color={AppColors.sky} />
@@ -168,7 +188,7 @@ export function HomePage() {
               </View>
             </View>
           </SquircleCard>
-          <SquircleCard radius={24} glowing="bonus" style={{ padding:14 }}>
+          <SquircleCard radius={24} glowing="bonus" style={{ padding:14, borderWidth:2, borderColor: isDark ? colors.glassEdge : '#000000', backgroundColor: isDark ? undefined : '#FFFFFF' }}>
             <View style={{ flexDirection:'row', alignItems:'center' }}>
               <View style={{ width:36, height:36, borderRadius:12, backgroundColor: withAlpha(AppColors.primary,0.12), alignItems:'center', justifyContent:'center' }}>
                 <Ionicons name="calendar-outline" size={18} color={AppColors.primary} />
@@ -226,7 +246,7 @@ export function HomePage() {
         {/* Daily Goal — Duolingo daily-quests pattern with chunky progress bar */}
         {habits.length > 0 ? (
           <View style={{ marginHorizontal:24, marginTop:14 }}>
-            <SquircleCard radius={24} style={{ padding:16 }}>
+            <SquircleCard radius={24} style={{ padding:16, borderWidth:2, borderColor: isDark ? colors.glassEdge : '#000000', backgroundColor: isDark ? undefined : '#FFFFFF' }}>
               <View style={{ flexDirection:'row', alignItems:'center' }}>
                 <Text style={{ fontFamily: fontFamilyFor('w800'), fontSize:15, color: colors.ink }}><Text>Daily Goal</Text></Text>
                 <View style={styles.flex1} />
@@ -243,7 +263,7 @@ export function HomePage() {
         ) : null}
 
         <View style={{ marginHorizontal:24, marginTop:14 }}>
-          <SquircleCard radius={24} style={{ padding:16 }}>
+          <SquircleCard radius={24} style={{ padding:16, borderWidth:2, borderColor: isDark ? colors.glassEdge : '#000000', backgroundColor: isDark ? undefined : '#FFFFFF' }}>
             <View style={{ flexDirection:'row', alignItems:'center' }}>
               <Text style={{ fontFamily: fontFamilyFor('w800'), fontSize:15, color: colors.ink }}><Text>This Week</Text></Text>
               <View style={styles.flex1} />
@@ -375,11 +395,20 @@ const styles = StyleSheet.create({
   questConnector:{ flex:1, width:4, borderRadius:2, marginTop:6, minHeight:12, backgroundColor:'#FDE8D8' },
   sectionHeader:{ flexDirection:'row', alignItems:'center', paddingHorizontal:24, marginBottom:10 },
   sectionTitle:{ fontSize:18, fontFamily: fontFamilyFor('w800'), letterSpacing:-0.3 },
-  filterPill:{ paddingHorizontal:10, paddingVertical:7, borderRadius:999, borderWidth:1 },
+  filterPill:{ paddingHorizontal:12, paddingVertical:8, borderRadius:999, borderWidth:2 },
   questList:{ paddingHorizontal:24, marginBottom:24 },
   taskCard:{ borderRadius:24, padding:14, shadowColor:'#0F172A', shadowOpacity:0.04, shadowRadius:12, shadowOffset:{width:0,height:4}, elevation:2 },
   checkCircle:{ width:28, height:28, borderRadius:14, alignItems:'center', justifyContent:'center' },
   miniStat:{ flexDirection:'row', alignItems:'center', gap:6, paddingHorizontal:12, paddingVertical:8, borderRadius:999, borderWidth:1 },
+  helloCard:{
+    flexDirection:'row', alignItems:'center',
+    borderRadius:22, padding:14,
+    borderWidth:2, borderColor:'#000000',
+    backgroundColor:'#FFFFFF',
+    shadowColor:'#000', shadowOpacity:1, shadowRadius:0, shadowOffset:{width:3,height:3}, elevation:3,
+  },
+  askQubiPill:{ backgroundColor:'#F97316', borderRadius:999, borderWidth:2, borderColor:'#000000', paddingHorizontal:12, paddingVertical:8 },
+  askQubiText:{ fontFamily: fontFamilyFor('w800'), fontSize:12, color:'#FFFFFF' },
 });
 
 export function PrimaryPillButton({ label, onPress }: { label: string; onPress?: () => void }) {

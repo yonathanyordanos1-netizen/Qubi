@@ -377,8 +377,6 @@ function SixStepWizardInner({ onOtpRequired }: { onOtpRequired?: (email: string)
                 </View>
                 <View style={{ height: 16 }} />
                 <Text style={[styles.label, { color: colors.muted }]}><Text>{'USERNAME'}</Text></Text>
-                <View style={{ height: 16 }} />
-                <Text style={[styles.label, { color: colors.muted }]}><Text>{'USERNAME'}</Text></Text>
                 <View style={[styles.inputCard, { backgroundColor: inputBg, borderColor: username.length === 0 ? (focused === 'username' ? withAlpha(AppColors.primary, 0.38) : inputBorder) : /^[a-z0-9_]{3,16}$/.test(username.replace(/^@/, '').toLowerCase()) ? withAlpha('#16A34A', 0.55) : withAlpha('#EF4444', 0.5) }]}>
                   <View style={styles.inputRow}>
                     <Text style={{ fontFamily: fontFamilyFor('w700'), fontSize: 15, color: colors.muted }}><Text>{'@'}</Text></Text>

@@ -1,5 +1,7 @@
 import { AppConfig } from './config';
 import { supabase } from './supabase';
+import { firstSuccess } from './aiEngine';
+import { isNimConfigured, nimGradeProof } from './nvidiaNim';
 import type { Habit } from '../types/models';
 
 /**
@@ -152,6 +154,41 @@ export async function verifyProofWithAI(
 
     if (!AppConfig.aiConfigured) throw new Error('vision-unavailable');
     const questList = pendingHabits.map((q) => `- id=${q.id} · "${q.name}" (${q.category})`).join('\n');
+
+    // Fastest-wins race: NVIDIA NIM grading vs the OpenRouter vision chain.
+    // Whichever provider returns a parseable verdict first wins; slow or
+    // rate-limited legs are ignored once a winner lands.
+    const legs: Array<() => Promise<VisionVerificationResult>> = [];
+    if (isNimConfigured()) {
+      legs.push(() => verifyViaNim(clean, questList, pendingHabits));
+    }
+    legs.push(() => verifyViaOpenRouter(clean, questList, pendingHabits));
+    return firstSuccess(legs);
+  } catch (error) {
+    // Never auto-accept. Surface the real failure so the UI can show a
+    // retryable message — no offline simulator that grants free XP.
+    throw error;
+  }
+}
+
+/** NVIDIA NIM grading leg — parses through the shared strict parser. */
+async function verifyViaNim(
+  clean: string,
+  questList: string,
+  pendingHabits: Habit[],
+): Promise<VisionVerificationResult> {
+  const raw = await nimGradeProof(clean, questList);
+  const verdict = parseVerdict(raw, pendingHabits);
+  if (verdict == null) throw new Error('unparseable-verdict');
+  return verdict;
+}
+
+/** OpenRouter vision-model chain (existing fallback ladder). */
+async function verifyViaOpenRouter(
+  clean: string,
+  questList: string,
+  pendingHabits: Habit[],
+): Promise<VisionVerificationResult> {
     let lastError: unknown = null;
 
     for (const model of VISION_MODELS) {
@@ -214,11 +251,6 @@ export async function verifyProofWithAI(
       }
     }
     throw lastError ?? new Error('all-models-failed');
-  } catch (error) {
-    // Never auto-accept. Surface the real failure so the UI can show a
-    // retryable message — no offline simulator that grants free XP.
-    throw error;
-  }
 }
 
 /** Calls the secure Supabase Edge Function proxy. Returns null when unavailable. */
@@ -285,7 +317,8 @@ async function verifyViaEdgeFunction(
   }
 }
 
-function parseVerdict(raw: string, pending: Habit[]): VisionVerificationResult | null {  try {
+/** Strict verdict parser shared by the OpenRouter and NVIDIA NIM legs. */
+export function parseVerdict(raw: string, pending: Habit[]): VisionVerificationResult | null {  try {
     let cleaned = raw.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '').trim();
     const start = cleaned.indexOf('{');
     const end = cleaned.lastIndexOf('}');

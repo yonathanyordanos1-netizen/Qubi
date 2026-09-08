@@ -35,8 +35,13 @@ const STREAK_TEXT_BLUE = '#185FA5';
 const FLAME_ORANGE = '#FF6D00';
 const CARD_WHITE = '#FFFFFF';
 const TRACK_GRAY = '#E8E9EA';
-const BACKDROP = 'rgba(0,0,0,0.78)';
+const BACKDROP = '#FFF7ED';
 const CONFETTI_COLORS = ['#FFC531', XP_ORANGE, '#22D3EE', '#58CC02', '#FF6B9D'] as const;
+const DUO_GREEN = '#58CC02';
+const DUO_GREEN_DEEP = '#46A302';
+
+/** Duolingo-style celebration headlines — one picked per win. */
+const HEADLINES = ['Awesome!', 'Amazing!', 'Incredible!', 'Unstoppable!', 'Superstar!'] as const;
 
 /** Randomized celebrating reward glyph shown beside the mascot on each win. */
 const REWARD_GLYPHS = ['🎉', '🏆', '⭐', '🔥', '💪', '🌟', '🎊', '👏'] as const;
@@ -76,9 +81,13 @@ export function ProofSuccessModal({
 }) {
   const hapticsOn = useSettingsStore((s) => s.haptics);
 
-  // One random reward glyph per modal mount — variety on every celebration.
+  // One random reward glyph + headline per modal mount — variety on every celebration.
   const rewardGlyph = useMemo(
     () => REWARD_GLYPHS[Math.floor(Math.random() * REWARD_GLYPHS.length)],
+    [],
+  );
+  const headline = useMemo(
+    () => HEADLINES[Math.floor(Math.random() * HEADLINES.length)],
     [],
   );
 
@@ -181,26 +190,29 @@ export function ProofSuccessModal({
         ))}
       </View>
 
-      {/* Soft rounded white card */}
+      {/* Duolingo-style full-screen result page */}
       <View style={styles.centerWrap} pointerEvents="box-none">
         <Animated.View style={[enterStyle, styles.cardShadow]}>
           <View style={styles.card}>
-            {/* Qubi avatar + glowing star burst */}
-            <View style={styles.avatarStack}>
-              <Animated.View style={[styles.burstLayer, burstGlow, burstScale]} pointerEvents="none">
-                {Array.from({ length: 8 }, (_, i) => (
-                  <StarBurst key={i} index={i} />
-                ))}
-              </Animated.View>
-              <Animated.View style={avatarStyle}>
-                <QubiMascot size={104} celebrating bob={false} />
-              </Animated.View>
-              <View style={styles.rewardGlyphWrap} pointerEvents="none">
-                <Text style={styles.rewardGlyph}><Text>{rewardGlyph}</Text></Text>
+            {/* Green hero panel — mascot + star burst celebration */}
+            <View style={styles.heroPanel}>
+              <View style={styles.avatarStack}>
+                <Animated.View style={[styles.burstLayer, burstGlow, burstScale]} pointerEvents="none">
+                  {Array.from({ length: 8 }, (_, i) => (
+                    <StarBurst key={i} index={i} />
+                  ))}
+                </Animated.View>
+                <Animated.View style={avatarStyle}>
+                  <QubiMascot size={104} celebrating bob={false} />
+                </Animated.View>
+                <View style={styles.rewardGlyphWrap} pointerEvents="none">
+                  <Text style={styles.rewardGlyph}><Text>{rewardGlyph}</Text></Text>
+                </View>
               </View>
             </View>
 
-            <Text style={styles.headline}>QUEST COMPLETE!</Text>
+            <View style={styles.sheetBody}>
+            <Text style={styles.headline}>{headline}</Text>
             <Text numberOfLines={2} style={styles.questName}>
               {info.habitName}
             </Text>
@@ -279,6 +291,7 @@ export function ProofSuccessModal({
                 </Pressable>
               </Animated.View>
             ) : null}
+            </View>
           </View>
         </Animated.View>
       </View>
@@ -349,31 +362,45 @@ const styles = StyleSheet.create({
   backdrop: { backgroundColor: BACKDROP },
   centerWrap: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
+    justifyContent: 'flex-end',
+    alignItems: 'stretch',
+    paddingHorizontal: 0,
   },
   cardShadow: {
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 480,
+    alignSelf: 'center',
     shadowColor: '#000',
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    shadowOffset: { width: 4, height: 4 },
-    elevation: 0,
-    borderRadius: 20,
-    borderWidth: 2.5,
-    borderColor: '#000',
-    backgroundColor: CARD_WHITE,
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: -8 },
+    elevation: 12,
   },
   card: {
     backgroundColor: CARD_WHITE,
-    borderRadius: 17,
-    paddingHorizontal: 22,
-    paddingTop: 24,
-    paddingBottom: 22,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderTopWidth: 2.5,
+    borderLeftWidth: 2.5,
+    borderRightWidth: 2.5,
+    borderColor: '#000',
+    paddingBottom: 26,
     alignItems: 'stretch',
     overflow: 'hidden',
+    maxHeight: '94%',
+  },
+  /* Green Duolingo hero panel holding the celebration */
+  heroPanel: {
+    backgroundColor: DUO_GREEN,
+    borderBottomWidth: 2.5,
+    borderBottomColor: '#000',
+    paddingTop: 18,
+    paddingBottom: 14,
+    alignItems: 'center',
+  },
+  sheetBody: {
+    paddingHorizontal: 22,
+    paddingTop: 16,
   },
 
   /* Avatar + star burst */
@@ -390,14 +417,14 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
-  /* Headline */
+  /* Headline — Duolingo result style */
   headline: {
     textAlign: 'center',
-    color: AppColors.ink,
+    color: DUO_GREEN_DEEP,
     fontFamily: fontFamilyFor('w900'),
-    fontSize: 21,
-    lineHeight: 26,
-    letterSpacing: 0.4,
+    fontSize: 30,
+    lineHeight: 34,
+    letterSpacing: -0.5,
   },
   questName: {
     textAlign: 'center',
@@ -492,21 +519,21 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
 
-  /* 3D tactile CONTINUE */
+  /* 3D tactile CONTINUE — Duolingo green */
   ctaWrap: { marginTop: 18 },
   ctaShadow: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: XP_ORANGE_DEEP,
+    backgroundColor: DUO_GREEN_DEEP,
     borderRadius: 999,
   },
   ctaFront: {
     height: 56,
     borderRadius: 999,
-    backgroundColor: XP_ORANGE,
+    backgroundColor: DUO_GREEN,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: XP_ORANGE_DEEP,
+    borderColor: DUO_GREEN_DEEP,
     borderBottomWidth: 0,
   },
   ctaText: {

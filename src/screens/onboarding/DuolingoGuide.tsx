@@ -32,6 +32,7 @@ const SLIDES = [
   { title: 'Build Daily Habits', desc: 'Lock in streaks and crush your daily goal — Qubi keeps you accountable every single day.' },
   { title: 'Earn XP & Level Up', desc: 'Every verified quest earns 10–120 XP based on effort. Level up and unlock avatar rewards.' },
   { title: 'Compete with Friends', desc: 'Climb the leaderboard, take on friend challenges and win weekly leagues.' },
+  { title: 'Add the Streak Widget', desc: 'Pin your streak to the Home Screen so you never lose it. Takes 10 seconds.' },
 ] as const;
 
 /** expo-router navigation when available; no-op in the classic-entry build */
@@ -147,18 +148,18 @@ export function DuolingoGuide({ onGetStarted, onSkip, onLogin, onDone }: { onGet
             <View style={[styles.guideCard, { maxWidth: CARD_MAX_W }]}>
               {/* Hero: rounded-square liquid-glass tile with mascot */}
               <View style={[styles.heroTile, { height: VISUAL_H }]}>
-                {i === 0 ? <QubiMascot size={76} bob /> : i === 1 ? <QubiMascot size={76} pulseGlow /> : <QubiMascot size={76} celebrating />}
+                {i === 0 ? <QubiMascot size={76} bob /> : i === 1 ? <QubiMascot size={76} pulseGlow /> : i === 2 ? <QubiMascot size={76} celebrating /> : <WidgetPreview />}
                 {i === 0 ? (
                   <View style={styles.accentPos}><FlamePulse /></View>
                 ) : i === 1 ? (
                   <View style={styles.accentPos}><FloatXpChip /></View>
-                ) : (
+                ) : i === 2 ? (
                   <View style={styles.accentPos}><TrophyChip /></View>
-                )}
+                ) : null}
               </View>
 
               {/* Slide stat rows */}
-              {i === 0 ? <StreakRows /> : i === 1 ? <XpRows /> : <LeaderRows />}
+              {i === 0 ? <StreakRows /> : i === 1 ? <XpRows /> : i === 2 ? <LeaderRows /> : <WidgetSteps />}
 
               <View style={styles.cardSpacer} />
               <Text style={styles.slideTitle}><Text>{slide.title}</Text></Text>
@@ -257,6 +258,44 @@ function XpRows() {
   );
 }
 
+/** Slide 4 — Duolingo-style "add the widget" how-to */
+function WidgetPreview() {
+  return (
+    <View style={styles.widgetMock}>
+      <View style={styles.widgetMockHead}>
+        <Text style={{ fontSize: 15 }}><Text>{'🔥'}</Text></Text>
+        <Text style={styles.widgetMockStreak}><Text>{'12'}</Text></Text>
+      </View>
+      <View style={styles.widgetMockDots}>
+        {['M', 'T', 'W', 'T', 'F'].map((d, idx) => (
+          <View key={`${d}-${idx}`} style={[styles.widgetMockDot, idx < 3 && styles.widgetMockDotDone]}>
+            <Text style={styles.widgetMockDotText}><Text>{d}</Text></Text>
+          </View>
+        ))}
+      </View>
+      <Text style={styles.widgetMockSub}><Text>{'Qubi Streak'}</Text></Text>
+    </View>
+  );
+}
+
+/** Slide 4 stat rows — 3 steps to pin the widget */
+function WidgetSteps() {
+  const steps = [
+    { n: '1', text: 'Long-press your Home Screen' },
+    { n: '2', text: 'Tap + and pick Qubi Streak' },
+    { n: '3', text: 'Never lose your streak 🔥' },
+  ];
+  return (
+    <View style={styles.statCard}>
+      {steps.map((s, idx) => (
+        <View key={s.n} style={[styles.widgetStepRow, idx < steps.length - 1 && styles.widgetStepDivider]}>
+          <View style={styles.widgetStepNum}><Text style={styles.widgetStepNumText}><Text>{s.n}</Text></Text></View>
+          <Text style={styles.widgetStepText}><Text>{s.text}</Text></Text>
+        </View>
+      ))}
+    </View>
+  );
+}
 /** Slide 3 stat rows — leaderboard */
 function LeaderRows() {
   return (
@@ -381,6 +420,28 @@ const styles = StyleSheet.create({
   leaderDivider: { borderBottomWidth: 1.5, borderBottomColor: '#00000022' },
   leaderName: { fontSize: 14, fontFamily: fontFamilyFor('w700'), color: '#000' },
   leaderXp: { fontSize: 12, fontFamily: fontFamilyFor('w800'), color: '#3A7D00' },
+  widgetMock: {
+    backgroundColor: '#F97316', borderRadius: 16, borderWidth: 2, borderColor: '#000',
+    paddingHorizontal: 16, paddingVertical: 10, alignItems: 'center',
+  },
+  widgetMockHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  widgetMockStreak: { fontSize: 22, fontFamily: fontFamilyFor('w900'), color: '#FFFFFF' },
+  widgetMockDots: { flexDirection: 'row', gap: 5, marginTop: 6 },
+  widgetMockDot: {
+    width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.35)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  widgetMockDotDone: { backgroundColor: '#FFFFFF' },
+  widgetMockDotText: { fontSize: 9, fontFamily: fontFamilyFor('w800'), color: '#F97316' },
+  widgetMockSub: { fontSize: 10, fontFamily: fontFamilyFor('w700'), color: '#FFFFFF', marginTop: 6 },
+  widgetStepRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7 },
+  widgetStepDivider: { borderBottomWidth: 1.5, borderBottomColor: '#00000022' },
+  widgetStepNum: {
+    width: 26, height: 26, borderRadius: 13, backgroundColor: '#F97316',
+    borderWidth: 2, borderColor: '#000', alignItems: 'center', justifyContent: 'center', marginRight: 10,
+  },
+  widgetStepNumText: { fontSize: 13, fontFamily: fontFamilyFor('w800'), color: '#FFFFFF' },
+  widgetStepText: { fontSize: 13, fontFamily: fontFamilyFor('w600'), color: '#000' },
 });
 
 export default DuolingoGuide;

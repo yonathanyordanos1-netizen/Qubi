@@ -332,25 +332,7 @@ function AutonomousProofSheet({
                 </Pressable>
               </View>
             ) : stage === 'analyzing' ? (
-              <View style={styles.stagePadCentered}>
-                {captured != null ? (
-                  <Image source={{ uri: captured.uri }} style={styles.analyzeThumb} resizeMode="cover" />
-                ) : (
-                  <View style={[styles.analyzeThumb, styles.analyzeThumbPlaceholder]}>
-                    <StrokeIcon name="camera" size={44} color={AppColors.mutedLight} />
-                  </View>
-                )}
-                <View style={{ height: 24 }} />
-                <ActivityIndicator color={AppColors.rewardBlue} style={styles.analyzeSpinner} />
-                <View style={{ height: 18 }} />
-                <View style={styles.scanBarTrack}>
-                  <AutoScanSweep />
-                </View>
-                <View style={{ height: 6 }} />
-                <Text style={styles.analyzeTitle}>Analyzing photo proof…</Text>
-                <View style={{ height: 6 }} />
-                <Text style={styles.analyzeSubtitle}>Qubi is inspecting your proof... 🔍</Text>
-              </View>
+              <AnalyzingStage habit={pending[0] ?? null} captured={captured} demoCapture={false} />
             ) : (
               <AutoResultStage
                 result={result}
@@ -403,17 +385,6 @@ function AutonomousProofSheet({
       </View>
     </CrossModal>
   );
-}
-
-function AutoScanSweep() {
-  const sweep = useSharedValue(0);
-  useEffect(() => {
-    sweep.value = withRepeat(withTiming(1, { duration: 1800, easing: Easing.linear }), -1);
-  }, [sweep]);
-  const barStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(sweep.value, [0, 1], [-80, 280]) }],
-  }));
-  return <Animated.View style={[styles.scanBarSweep, barStyle]} />;
 }
 
 function AutoResultStage({
@@ -958,47 +929,92 @@ function ReticleCorners() {
   );
 }
 
-/* ── Analyzing stage ───────────────────────────────────────── */
+/* ── Analyzing stage — Cal-AI style scan experience ─────────────────── */
+
+const ANALYZE_STEPS = ['Detecting scene', 'Matching your quest', 'Grading effort & XP'] as const;
 
 function AnalyzingStage({
   habit,
   captured,
   demoCapture,
 }: {
-  habit: Habit;
+  habit: Habit | null;
   captured: Capture | null;
   demoCapture: boolean;
 }) {
-  const sweep = useSharedValue(0);
-  useEffect(() => {
-    sweep.value = withRepeat(withTiming(1, { duration: 1800, easing: Easing.linear }), -1);
-  }, [sweep]);
+  const laser = useSharedValue(0);
+  const [stepIdx, setStepIdx] = useState(0);
+  const [pct, setPct] = useState(4);
 
-  const barStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(sweep.value, [0, 1], [-80, 280]) }],
+  useEffect(() => {
+    laser.value = withRepeat(withTiming(1, { duration: 1700, easing: Easing.inOut(Easing.ease) }), -1, true);
+  }, [laser]);
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setStepIdx(1), 900);
+    const t2 = setTimeout(() => setStepIdx(2), 2100);
+    const iv = setInterval(() => {
+      setPct((p) => (p >= 95 ? 95 : Math.min(95, p + 1 + Math.floor(Math.random() * 3))));
+    }, 160);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearInterval(iv);
+    };
+  }, []);
+
+  const laserStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: interpolate(laser.value, [0, 1], [6, 196]) }],
   }));
 
   return (
     <View style={styles.stagePadCentered}>
-      {captured != null ? (
-        <Image source={{ uri: captured.uri }} style={styles.analyzeThumb} resizeMode="cover" />
-      ) : (
-        <View style={[styles.analyzeThumb, styles.analyzeThumbPlaceholder]}>
-          <StrokeIcon name={habit.icon as never} size={44} color={AppColors.mutedLight} />
+      {/* Photo card with sweeping laser */}
+      <View style={styles.calPhotoCard}>
+        {captured != null ? (
+          <Image source={{ uri: captured.uri }} style={styles.calPhoto} resizeMode="cover" />
+        ) : (
+          <View style={[styles.calPhoto, styles.analyzeThumbPlaceholder]}>
+            <StrokeIcon name={(habit?.icon ?? 'camera') as never} size={52} color={AppColors.mutedLight} />
+          </View>
+        )}
+        <Animated.View style={[styles.calLaser, laserStyle]} pointerEvents="none" />
+        <View style={styles.calPctBadge} pointerEvents="none">
+          <Text style={styles.calPctText}>{pct}%</Text>
         </View>
-      )}
-      <View style={{ height: 24 }} />
-      <ActivityIndicator color={AppColors.rewardBlue} style={styles.analyzeSpinner} />
-      <View style={{ height: 18 }} />
-      <View style={styles.scanBarTrack}>
-        <Animated.View style={[styles.scanBarSweep, barStyle]} />
       </View>
-      <View style={{ height: 6 }} />
-      <Text style={styles.analyzeTitle}>Analyzing photo proof…</Text>
-      <View style={{ height: 6 }} />
+
+      <View style={{ height: 20 }} />
+      <Text style={styles.analyzeTitle}>Analyzing proof…</Text>
+      <View style={{ height: 4 }} />
       <Text style={styles.analyzeSubtitle}>
-        {demoCapture ? 'Preview capture — camera unavailable on this device' : 'Qubi is inspecting your proof... 🔍'}
+        {demoCapture ? 'Preview capture — camera unavailable on this device' : 'Qubi AI is inspecting your photo 🔍'}
       </Text>
+
+      <View style={{ height: 18 }} />
+      {/* Phase checklist */}
+      <View style={styles.calSteps}>
+        {ANALYZE_STEPS.map((label, i) => {
+          const done = i < stepIdx;
+          const active = i === stepIdx;
+          return (
+            <View key={label} style={styles.calStepRow}>
+              <View
+                style={[
+                  styles.calStepDot,
+                  done && styles.calStepDotDone,
+                  active && styles.calStepDotActive,
+                ]}
+              >
+                {done ? <Text style={styles.calStepCheck}>✓</Text> : null}
+              </View>
+              <Text style={[styles.calStepLabel, (done || active) && styles.calStepLabelOn]}>
+                {label}{active ? '…' : ''}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -1152,7 +1168,18 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   /* Camera */
-  viewfinderClip: { flex: 1, borderRadius: 24, overflow: 'hidden' },
+  viewfinderClip: {
+    flex: 1,
+    borderRadius: 28,
+    overflow: 'hidden',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    shadowColor: '#FFFFFF',
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 6,
+  },
   viewfinderPlaceholderWrap: {
     position: 'absolute',
     top: 0,
@@ -1180,15 +1207,25 @@ const styles = StyleSheet.create({
     left: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: withAlpha('#000000', 0.5),
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#000000',
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   habitBadgeEmoji: { fontSize: 14 },
-  habitBadgeName: { color: '#FFFFFF', fontSize: 11, fontWeight: '700', fontFamily: fontFamilyFor('w700') },
+  habitBadgeName: { color: '#0F172A', fontSize: 11, fontWeight: '700', fontFamily: fontFamilyFor('w700') },
   flashBtnWrap: { position: 'absolute', top: 14, right: 14 },
-  flashBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  flashBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
   scanLineWrap: { position: 'absolute', left: 22, right: 22, top: 0 },
   scanLine: {
     height: 2.5,
@@ -1202,14 +1239,33 @@ const styles = StyleSheet.create({
   },
   cameraHint: {
     fontSize: 12.5,
-    lineHeight: 17,
+    lineHeight: 18,
     textAlign: 'center',
-    fontWeight: '400',
-    fontFamily: fontFamilyFor('w500'),
-    color: AppColors.mutedLight,
+    fontWeight: '600',
+    fontFamily: fontFamilyFor('w600'),
+    color: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.22)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    overflow: 'hidden',
   },
   shutterWrap: { alignItems: 'center' },
-  shutterOuter: { width: 74, height: 74, borderRadius: 37, borderWidth: 4, borderColor: '#FFFFFF', padding: 5 },
+  shutterOuter: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    borderWidth: 5,
+    borderColor: '#FFFFFF',
+    padding: 5,
+    shadowColor: '#F97316',
+    shadowOpacity: 0.55,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 6,
+  },
   shutterInner: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
   /* Analyzing */
   analyzeThumb: { width: 120, height: 120, borderRadius: 18 },
@@ -1232,8 +1288,65 @@ const styles = StyleSheet.create({
     backgroundColor: AppColors.rewardBlue,
     opacity: 0.9,
   },
-  analyzeTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '700', fontFamily: fontFamilyFor('w700') },
+  analyzeTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', fontFamily: fontFamilyFor('w800') },
   analyzeSubtitle: { color: AppColors.mutedLight, fontSize: 12.5, textAlign: 'center', fontWeight: '400', fontFamily: fontFamilyFor('w500') },
+  /* Cal-AI scan experience */
+  calPhotoCard: {
+    width: 210,
+    height: 210,
+    borderRadius: 26,
+    overflow: 'hidden',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    backgroundColor: '#242628',
+    shadowColor: '#58CC02',
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
+  },
+  calPhoto: { width: '100%', height: '100%' },
+  calLaser: {
+    position: 'absolute',
+    left: 8,
+    right: 8,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#58CC02',
+    shadowColor: '#58CC02',
+    shadowOpacity: 0.9,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
+  },
+  calPctBadge: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    backgroundColor: 'rgba(0,0,0,0.62)',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  calPctText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', fontFamily: fontFamilyFor('w800') },
+  calSteps: { width: '100%', maxWidth: 300, gap: 10 },
+  calStepRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  calStepDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calStepDotActive: { borderColor: '#58CC02' },
+  calStepDotDone: { backgroundColor: '#58CC02', borderColor: '#58CC02' },
+  calStepCheck: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', lineHeight: 16 },
+  calStepLabel: { color: 'rgba(255,255,255,0.45)', fontSize: 13, fontWeight: '600', fontFamily: fontFamilyFor('w600') },
+  calStepLabelOn: { color: '#FFFFFF' },
   /* Verified (styles kept for the shared match chip used by AutoResultStage) */
   matchChip: {
     flexDirection: 'row',

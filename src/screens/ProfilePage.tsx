@@ -530,11 +530,20 @@ function EditProfileSheet({
 
   return (
     <CrossModal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex1}>
-        <View style={styles.flex1}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
+        style={styles.flex1}
+      >
+        <View style={[styles.flex1, { justifyContent: 'flex-end' }]}>
           <RnPressable onPress={onClose} style={StyleSheet.absoluteFill}>
             <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.35)' }]} />
           </RnPressable>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingHorizontal: 16, paddingBottom: 28 }}
+          >
           <View
             style={[
               styles.sheet,
@@ -567,6 +576,7 @@ function EditProfileSheet({
               </LinearGradient>
             </Pressable>
           </View>
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </CrossModal>
@@ -803,6 +813,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: AppSpacing.radiusSheet,
     borderTopRightRadius: AppSpacing.radiusSheet,
     borderWidth: 1,
+    maxHeight: '86%',
   },
   sheetTitle: { fontSize: 19, fontWeight: '800', fontFamily: fontFamilyFor('w800') },
   sheetInput: { flex: 1, fontSize: 15, fontWeight: '700', fontFamily: fontFamilyFor('w700'), paddingVertical: 14 },

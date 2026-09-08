@@ -43,6 +43,7 @@ import {
   suggestedToHabitInput,
   type SuggestedQuest,
 } from '../services/qubiService';
+import { chatReply } from '../services/aiEngine';
 
 const SUGGESTIONS = [
   '🌅 What\'s your ideal day?',
@@ -124,6 +125,8 @@ export default function QubiScreen({ onClose }: { onClose?: () => void }) {
   const [thinkingPrompt, setThinkingPrompt] = useState('');
 
   const scrollRef = useRef<ScrollView | null>(null);
+  /** Monotonic token — supersedes stale typing loops when a new send starts. */
+  const typeToken = useRef(0);
   const online = OpenRouterServiceInstance.isConfigured;
   const firstName = useMemo(() => displayName.split(' ')[0] ?? displayName, [displayName]);
 
@@ -258,23 +261,24 @@ export default function QubiScreen({ onClose }: { onClose?: () => void }) {
       setStreamingText('');
       setToolPlan(null);
 
-      let acc = '';
-      let plan: AiToolCall | null = null;
       try {
-        // Fresh store chat — includes the message added above (closure `chat`
-        // would omit it and the model would never see the user's question).
+        // Fastest-wins AI race (NVIDIA NIM vs OpenRouter): fresh store chat
+        // includes the message added above (closure `chat` would omit it and
+        // the model would never see the user's question).
         const messages = buildMessages(useAppStore.getState().chat);
-        for await (const event of OpenRouterServiceInstance.streamChat(messages)) {
-          if (event.kind === 'delta') {
-            acc += event.text;
-            setStreamingText(acc);
-            scrollToBottom();
-          } else if (event.kind === 'toolCall') {
-            plan = event.toolCall;
-            setToolPlan(event.toolCall);
-            scrollToBottom();
-          }
+        const reply = await chatReply(messages);
+        // Lively typing effect into the thinking bubble, then commit.
+        const token = ++typeToken.current;
+        const full = reply.trim();
+        let shown = '';
+        for (let i = 0; i < full.length; i += 6) {
+          if (token !== typeToken.current) return; // superseded by a new send
+          shown = full.slice(0, i + 6);
+          setStreamingText(shown);
+          scrollToBottom();
+          await new Promise<void>((r) => setTimeout(r, 18));
         }
+        useAppStore.getState().addAssistantMessage(full);
       } catch (e) {
         // Graceful degradation: one-shot retry via the Qubi engine, then a
         // dynamic local coaching reply so the conversation never dead-ends.
@@ -293,27 +297,10 @@ export default function QubiScreen({ onClose }: { onClose?: () => void }) {
         }
         useAppStore.getState().addAssistantMessage(message);
       } finally {
-        if (plan == null) {
-          const trimmed = acc.trim();
-          if (trimmed.length > 0) {
-            useAppStore.getState().addAssistantMessage(trimmed);
-          } else {
-            // Stream completed with no content — give the user a fallback reply.
-            try {
-              const level = 1 + Math.floor(useAppStore.getState().xp / 500);
-              const fallback = await askQubi(text, {
-                name: useAppStore.getState().displayName.split(' ')[0] ?? useAppStore.getState().displayName,
-                level,
-                streak: useAppStore.getState().streak,
-              });
-              useAppStore.getState().addAssistantMessage(fallback);
-            } catch {
-              useAppStore.getState().addAssistantMessage("I'm here! Try asking me something else.");
-            }
-          }
-        }
+        typeToken.current += 1; // stop any in-flight typing loop
         setStreaming(false);
         setStreamingText('');
+        setThinkingPrompt('');
         scrollToBottom();
       }
     },

@@ -1,12 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { fontFamilyFor } from '../theme/typography';
 
-const QUBI_OPEN = require('../../assets/images/qubi_open.jpg');
-const QUBI_CLOSED = require('../../assets/images/qubi_closed.jpg');
+const QUBI = require('../../Qubi/Qubi_2.jpg');
 
-// Matches the Rive artboard gradient wash. Used as the overlay bleed so the
-// top/bottom safe-area bands blend seamlessly with the dipped splash edges.
-const BLEED = '#EE6C13';
+// Duolingo-green launch splash. Keep the export shape + slide-up exit
+// contract (App.tsx unmounts this at ~2500ms via `duration`).
+const DUO_GREEN = '#58CC02';
 
 export interface SplashScreenProps {
   /** Total duration before the slide-up exit completes (ms). Sync with App's unmount timer. */
@@ -14,101 +14,118 @@ export interface SplashScreenProps {
 }
 
 /**
- * Qubi launch splash — native recreation of the Rive "SplashAnimation"
- * (no .riv export needed). The Rive blink cross-fades the closed-eye mascot
- * frame over the open-eye frame twice; here the same two art assets
- * (qubi_open / qubi_closed) are stacked and opacity-faded in sync:
- *
- *   0.40–0.57s  blink #1 (closed eyes fade in/out)
- *   0.77–0.93s  blink #2
- *   2.00s       content slides up in a cubic ease-in-out over 0.5s
- *   2.30s       …while fading to nothing; overlay unmounts at `duration`.
- *
- * The parent mounts this as a full-screen overlay and unmounts it right at
- * `duration` (App.tsx: 2500ms).
+ * Qubi launch splash — Duolingo style: solid Duo Green canvas, big mascot
+ * springs in with a playful overshoot + gentle bounce, "Qubi" wordmark pops
+ * up right after, tagline pill fades in, white loading bar sweeps near the
+ * bottom. Exits with the signature slide-up at `duration - 500ms`.
  */
 export function SplashScreen({ duration = 2500 }: SplashScreenProps) {
-  const { width, height } = useWindowDimensions();
+  const { height } = useWindowDimensions();
   const fade = useRef(new Animated.Value(1)).current;
   const translateY = useRef(new Animated.Value(0)).current;
-  const closedOpacity = useRef(new Animated.Value(0)).current;
+  const pop = useRef(new Animated.Value(0)).current;
+  const bounce = useRef(new Animated.Value(0)).current;
+  const wordUp = useRef(new Animated.Value(26)).current;
+  const wordIn = useRef(new Animated.Value(0)).current;
+  const tagIn = useRef(new Animated.Value(0)).current;
+  const bar = useRef(new Animated.Value(0)).current;
 
-  // Edge-to-edge: the mascot art fills the full screen (Fit.Cover behaviour).
-  // Art is 768x1376 portrait, so it scales to cover the shorter dimension and
-  // the taller dimension overflows — the gradient bleed swallows the excess.
-  const scale = Math.max(width / 768, height / 1376);
-  const renderW = 768 * scale;
-  const renderH = 1376 * scale;
-  const slideOffset = height; // Rive exits -1200px off a 874px artboard; full height is clean.
+  const slideOffset = height;
 
   useEffect(() => {
-    // Blink = cross-fade of the closed-eye art over the open-eye art, matching
-    // the Rive keyframes (frames 24→34 and 46→56 at 60fps).
-    const blink = (fadeInAt: number) =>
+    Animated.parallel([
+      Animated.spring(pop, { toValue: 1, damping: 9, stiffness: 130, mass: 1, useNativeDriver: true }),
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(650),
+          Animated.timing(bounce, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.timing(bounce, { toValue: 0, duration: 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        ]),
+      ),
       Animated.sequence([
-        Animated.delay(fadeInAt),
-        Animated.timing(closedOpacity, { toValue: 1, duration: 50, easing: Easing.out(Easing.ease), useNativeDriver: true }),
-        Animated.delay(70),
-        Animated.timing(closedOpacity, { toValue: 0, duration: 50, easing: Easing.in(Easing.ease), useNativeDriver: true }),
-      ]);
-
-    const anim = Animated.parallel([
-      blink(400),
-      blink(770),
+        Animated.delay(250),
+        Animated.parallel([
+          Animated.spring(wordUp, { toValue: 0, damping: 14, stiffness: 160, useNativeDriver: true }),
+          Animated.timing(wordIn, { toValue: 1, duration: 320, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+        ]),
+      ]),
+      Animated.sequence([
+        Animated.delay(600),
+        Animated.spring(tagIn, { toValue: 1, damping: 13, stiffness: 150, useNativeDriver: true }),
+      ]),
+      Animated.loop(
+        Animated.timing(bar, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ),
+      // Signature slide-up exit.
       Animated.timing(translateY, {
         toValue: -slideOffset,
         duration: 500,
-        delay: 2000,
+        delay: Math.max(0, duration - 500),
         easing: Easing.inOut(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(fade, {
         toValue: 0,
         duration: 200,
-        delay: 2300,
+        delay: Math.max(0, duration - 200),
         easing: Easing.in(Easing.ease),
         useNativeDriver: true,
       }),
-    ]);
-
-    anim.start();
-
-    // Clean up if the parent unmounts early (e.g. native splash hide).
-    const nodes = [fade, translateY, closedOpacity];
-    return () => {
-      anim.stop();
-      nodes.forEach((n) => n.stopAnimation());
-    };
-  }, [fade, translateY, closedOpacity, slideOffset]);
+    ]).start();
+  }, [pop, bounce, wordUp, wordIn, tagIn, bar, translateY, fade, slideOffset, duration]);
 
   return (
     <View style={[StyleSheet.absoluteFill, styles.overlay]}>
       <Animated.View
-        style={[StyleSheet.absoluteFill, { opacity: fade, transform: [{ translateY }] }]}
+        style={[StyleSheet.absoluteFill, styles.centerWrap, { opacity: fade, transform: [{ translateY }] }]}
         pointerEvents="auto"
       >
-        {/* Mascot art, edge-to-edge, centered horizontally. */}
-        <View style={[StyleSheet.absoluteFill, styles.center]}>
-          <View style={{ width: renderW, height: renderH }}>
-            {/* Open eyes — baseline frame, always visible. */}
-            <Image
-              source={QUBI_OPEN}
-              style={[StyleSheet.absoluteFill, styles.mascot]}
-              resizeMode="cover"
-              accessible={false}
-            />
-            {/* Closed eyes — cross-faded in twice by the blink above. */}
-            <Animated.View style={[StyleSheet.absoluteFill, { opacity: closedOpacity }]}>
-              <Image
-                source={QUBI_CLOSED}
-                style={[StyleSheet.absoluteFill, styles.mascot]}
-                resizeMode="cover"
-                accessible
-                accessibilityLabel="Qubi"
-              />
-            </Animated.View>
+        <View style={styles.halo} pointerEvents="none" />
+        <Animated.View
+          style={{
+            transform: [
+              { scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.01, 1] }) },
+              { translateY: bounce.interpolate({ inputRange: [0, 1], outputRange: [0, -8] }) },
+            ],
+          }}
+        >
+          <View style={styles.mascotRing}>
+            <Image source={QUBI} style={styles.mascot} resizeMode="cover" accessible accessibilityLabel="Qubi" />
           </View>
+        </Animated.View>
+
+        <View style={{ height: 18 }} />
+
+        <Animated.View style={{ opacity: wordIn, transform: [{ translateY: wordUp }] }}>
           <Text style={styles.wordmark}>Qubi</Text>
+        </Animated.View>
+
+        <View style={{ height: 10 }} />
+
+        <Animated.View
+          style={{
+            opacity: tagIn,
+            transform: [{ scale: tagIn.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }],
+          }}
+        >
+          <View style={styles.tagPill}>
+            <Text style={styles.tagText}>Tiny habits, daily wins</Text>
+          </View>
+        </Animated.View>
+
+        <View style={styles.barTrack} pointerEvents="none">
+          <Animated.View
+            style={[
+              styles.barFill,
+              {
+                transform: [
+                  {
+                    translateX: bar.interpolate({ inputRange: [0, 1], outputRange: [-70, 180] }),
+                  },
+                ],
+              },
+            ]}
+          />
         </View>
       </Animated.View>
     </View>
@@ -119,25 +136,71 @@ const styles = StyleSheet.create({
   overlay: {
     width: '100%',
     height: '100%',
-    // Bleed — top/bottom safe-area bands match the orange wash seamlessly,
-    // so the splash draws edge-to-edge behind the status bar.
-    backgroundColor: BLEED,
+    backgroundColor: DUO_GREEN,
   },
-  center: {
+  centerWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  halo: {
+    position: 'absolute',
+    width: 340,
+    height: 340,
+    borderRadius: 170,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
+  mascotRing: {
+    width: 184,
+    height: 184,
+    borderRadius: 92,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 6,
+    borderColor: 'rgba(255,255,255,0.85)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   mascot: {
-    width: '100%',
-    height: '100%',
+    width: 172,
+    height: 172,
+    borderRadius: 86,
   },
   wordmark: {
     color: '#FFFFFF',
-    fontSize: 34,
+    fontSize: 46,
     fontWeight: '900',
-    marginTop: 26,
-    letterSpacing: -0.5,
+    letterSpacing: -1,
     textAlign: 'center',
+    fontFamily: fontFamilyFor('w800'),
+  },
+  tagPill: {
+    backgroundColor: 'rgba(255,255,255,0.24)',
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 999,
+  },
+  tagText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textAlign: 'center',
+    fontFamily: fontFamilyFor('w700'),
+  },
+  barTrack: {
+    position: 'absolute',
+    bottom: 72,
+    width: 180,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: 'rgba(255,255,255,0.28)',
+    overflow: 'hidden',
+  },
+  barFill: {
+    width: 70,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FFFFFF',
   },
 });
 
