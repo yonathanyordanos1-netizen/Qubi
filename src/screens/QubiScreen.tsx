@@ -191,13 +191,19 @@ export default function QubiScreen({ onClose }: { onClose?: () => void }) {
     [responses, displayName],
   );
 
-  const buildMessages = useCallback((): AiMessage[] => {
-    const history = chat.length > 20 ? chat.slice(chat.length - 20) : chat;
-    return [
-      { role: 'system', content: buildSystemPrompt() },
-      ...history.map((m): AiMessage => ({ role: m.fromUser ? 'user' : 'assistant', content: m.text })),
-    ];
-  }, [chat, buildSystemPrompt]);
+  const buildMessages = useCallback(
+    (override?: Array<{ fromUser: boolean; text: string }>): AiMessage[] => {
+      // NOTE: callers must pass the fresh store chat — the render-scope `chat`
+      // is stale inside send() because addUserMessage runs just before.
+      const source = override ?? chat;
+      const history = source.length > 20 ? source.slice(source.length - 20) : source;
+      return [
+        { role: 'system', content: buildSystemPrompt() },
+        ...history.map((m): AiMessage => ({ role: m.fromUser ? 'user' : 'assistant', content: m.text })),
+      ];
+    },
+    [chat, buildSystemPrompt],
+  );
 
   const planFromTool = useCallback((tool: AiToolCall): PlannedHabit[] => {
     const raw = Array.isArray(tool.args['habits']) ? (tool.args['habits'] as unknown[]) : [];
@@ -255,7 +261,10 @@ export default function QubiScreen({ onClose }: { onClose?: () => void }) {
       let acc = '';
       let plan: AiToolCall | null = null;
       try {
-        for await (const event of OpenRouterServiceInstance.streamChat(buildMessages())) {
+        // Fresh store chat — includes the message added above (closure `chat`
+        // would omit it and the model would never see the user's question).
+        const messages = buildMessages(useAppStore.getState().chat);
+        for await (const event of OpenRouterServiceInstance.streamChat(messages)) {
           if (event.kind === 'delta') {
             acc += event.text;
             setStreamingText(acc);
