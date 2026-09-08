@@ -19,7 +19,7 @@ const BUILTIN_FALLBACKS: Record<string, string> = {
   EXPO_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_qTECh9PHTWpUUUVZeSjoCw_k9vzYCaj',
   EXPO_PUBLIC_OPENROUTER_API_KEY: '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',
   EXPO_PUBLIC_OPENROUTER_MODEL: 'nvidia/nemotron-3.5-lightning:free',
-  EXPO_PUBLIC_OPENROUTER_VISION_MODEL: 'google/gemma-3-27b-it:free',
+  EXPO_PUBLIC_OPENROUTER_VISION_MODEL: 'google/gemma-4-26b-a4b-it:free',
 };
 
 function extraValue(key: string): string {

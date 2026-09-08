@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -38,6 +38,9 @@ const TRACK_GRAY = '#E8E9EA';
 const BACKDROP = 'rgba(0,0,0,0.78)';
 const CONFETTI_COLORS = ['#FFC531', XP_ORANGE, '#22D3EE', '#58CC02', '#FF6B9D'] as const;
 
+/** Randomized celebrating reward glyph shown beside the mascot on each win. */
+const REWARD_GLYPHS = ['🎉', '🏆', '⭐', '🔥', '💪', '🌟', '🎊', '👏'] as const;
+
 export interface ProofSuccessInfo {
   habitName: string;
   xpGained: number;
@@ -72,6 +75,12 @@ export function ProofSuccessModal({
   onSnapAnother?: () => void;
 }) {
   const hapticsOn = useSettingsStore((s) => s.haptics);
+
+  // One random reward glyph per modal mount — variety on every celebration.
+  const rewardGlyph = useMemo(
+    () => REWARD_GLYPHS[Math.floor(Math.random() * REWARD_GLYPHS.length)],
+    [],
+  );
 
   // Task-completed sting the moment the modal opens + celebratory haptic.
   useEffect(() => {
@@ -186,6 +195,9 @@ export function ProofSuccessModal({
               <Animated.View style={avatarStyle}>
                 <QubiMascot size={104} celebrating bob={false} />
               </Animated.View>
+              <View style={styles.rewardGlyphWrap} pointerEvents="none">
+                <Text style={styles.rewardGlyph}><Text>{rewardGlyph}</Text></Text>
+              </View>
             </View>
 
             <Text style={styles.headline}>QUEST COMPLETE!</Text>
@@ -345,15 +357,18 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
     shadowColor: '#000',
-    shadowOpacity: 0.4,
-    shadowRadius: 34,
-    shadowOffset: { width: 0, height: 16 },
-    elevation: 22,
-    borderRadius: 32,
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    shadowOffset: { width: 4, height: 4 },
+    elevation: 0,
+    borderRadius: 20,
+    borderWidth: 2.5,
+    borderColor: '#000',
+    backgroundColor: CARD_WHITE,
   },
   card: {
     backgroundColor: CARD_WHITE,
-    borderRadius: 32,
+    borderRadius: 17,
     paddingHorizontal: 22,
     paddingTop: 24,
     paddingBottom: 22,
@@ -363,6 +378,8 @@ const styles = StyleSheet.create({
 
   /* Avatar + star burst */
   avatarStack: { alignItems: 'center', justifyContent: 'center', height: 132, marginBottom: 6 },
+  rewardGlyphWrap: { position: 'absolute', right: 28, top: 6 },
+  rewardGlyph: { fontSize: 40 },
   burstLayer: { position: 'absolute', width: 220, height: 220, alignItems: 'center', justifyContent: 'center' },
   starBurst: {
     position: 'absolute',

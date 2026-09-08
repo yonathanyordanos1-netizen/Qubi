@@ -41,6 +41,7 @@ import { VisionVerdict, AiHttpException } from '../services/openRouter';
 import { SupabaseServiceInstance } from '../services/supabase';
 import { takeQuestProofPhoto, pickQuestProofPhoto } from '../services/photoProofService';
 import { verifyCameraProof, awardProofXp, type VisionVerificationResult } from '../services/aiProofService';
+import { playTaskCompleted } from '../services/soundService';
 import type { Habit } from '../types/models';
 
 type ProofStage = 'camera' | 'analyzing' | 'verified' | 'rejected';
@@ -152,6 +153,9 @@ function AutonomousProofSheet({
             difficulty: v.difficulty ?? 'Medium',
             taskName: v.taskName ?? matched.name,
           });
+          // Fire the task-completed sting the instant verification succeeds —
+          // the modal replays it on mount as a safety net.
+          playTaskCompleted();
           setShowFx(true);
           const after = useAppStore.getState();
           setReward({
@@ -628,6 +632,8 @@ export default function PhotoProofSheet({ habit, onClose }: { habit: Habit; onCl
           difficulty: v.difficulty ?? 'Medium',
           taskName: v.taskName ?? habit.name,
         });
+        // Fire the task-completed sting the instant verification succeeds.
+        playTaskCompleted();
         setShowFx(true);
         const after = useAppStore.getState();
         setReward({

@@ -12,21 +12,25 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { useGateStore } from '../../state/gateStore';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { QubiMascot } from '../../components/QubiMascot';
+import { playStepClick } from '../../services/soundService';
 
 /**
- * DuolingoGuide — 3-step onboarding carousel (Duolingo-grade).
+ * DuolingoGuide — 3-step onboarding carousel (Neubrutalism edition).
  * Routing: "Get Started"/"Skip" persist the hasCompletedOnboarding flag
  * (gateStore → AsyncStorage) then transition to Sign Up; slide-3 link goes
- * to Log In. Progress: h10/r6/gap8, orange active + top highlight. Slides are
- * gamified white cards (r28, 2px border, soft shadow) with floating accents
- * and a full-width 3D CTA pinned at the card bottom (h56, r16). Hermes-safe.
+ * to Log In. Cards: 2.5px black borders, hard 4×4 offset shadows, r20.
+ * Skip shows on steps 1–2 only. Layout scales off window W/H so cards fit
+ * comfortably from iPhone SE to Pro Max without overflow. Hermes-safe.
  */
 
-const W = Dimensions.get('window').width;
+const { width: W, height: H } = Dimensions.get('window');
+// Compact hero on short screens (SE) so the card never overflows.
+const VISUAL_H = Math.max(88, Math.min(120, H * 0.15));
+const CARD_MAX_W = Math.min(320, W - 48);
 
 const SLIDES = [
   { title: 'Build Daily Habits', desc: 'Lock in streaks and crush your daily goal — Qubi keeps you accountable every single day.' },
-  { title: 'Earn XP & Level Up', desc: 'Every completed quest awards +50 XP ✨. Level up and unlock avatar rewards.' },
+  { title: 'Earn XP & Level Up', desc: 'Every verified quest earns 10–120 XP based on effort. Level up and unlock avatar rewards.' },
   { title: 'Compete with Friends', desc: 'Climb the leaderboard, take on friend challenges and win weekly leagues.' },
 ] as const;
 
@@ -80,6 +84,7 @@ export function DuolingoGuide({ onGetStarted, onSkip, onLogin, onDone }: { onGet
   };
 
   const handleCta = () => {
+    playStepClick();
     if (index < SLIDES.length - 1) {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       goTo(index + 1);
@@ -90,35 +95,45 @@ export function DuolingoGuide({ onGetStarted, onSkip, onLogin, onDone }: { onGet
   };
 
   const handleSkip = () => {
+    playStepClick();
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     finishGuide(onSkip ?? onDone, '/auth/signup');
   };
 
   const handleLogin = () => {
+    playStepClick();
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     finishGuide(onLogin, '/auth/login');
   };
 
+  const canvas = isDark ? AppColors.canvasDark : '#FFF7ED';
+  const last = index === SLIDES.length - 1;
+
   return (
-    <View style={[styles.flex, { backgroundColor: isDark ? AppColors.canvasDark : '#FFFFFF' }]}>
-      {/* Top bar: chunky segmented progress + Skip */}
+    <View style={[styles.flex, { backgroundColor: canvas }]}>
+      {/* Top bar: chunky Neubrutalist progress segments + Skip (steps 1–2 only) */}
       <View style={[styles.topBar, { paddingTop: insets.top + 12, paddingHorizontal: 24 }]}>
         <View style={styles.progressRow}>
           {SLIDES.map((_, i) => (
             <View
               key={i}
-              style={[styles.progressSegment, { backgroundColor: i <= index ? AppColors.primary : isDark ? 'rgba(255,255,255,0.10)' : '#E2E8F0' }]}
-            >
-              {i <= index ? <View style={styles.progressHighlight} /> : null}
-            </View>
+              style={[
+                styles.progressSegment,
+                { backgroundColor: i <= index ? '#F97316' : isDark ? 'rgba(255,255,255,0.12)' : '#FFFFFF' },
+              ]}
+            />
           ))}
         </View>
-        <TouchableOpacity onPress={handleSkip} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={styles.skipButton}>
-          <Text style={styles.skipText}><Text>{'Skip'}</Text></Text>
-        </TouchableOpacity>
+        {!last ? (
+          <TouchableOpacity onPress={handleSkip} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={styles.skipButton}>
+            <Text style={styles.skipText}><Text>{'Skip'}</Text></Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.skipPlaceholder} />
+        )}
       </View>
 
-      {/* 3-slide carousel — gamified card per slide */}
+      {/* 3-slide carousel — Neubrutalist card per slide */}
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -129,16 +144,16 @@ export function DuolingoGuide({ onGetStarted, onSkip, onLogin, onDone }: { onGet
       >
         {SLIDES.map((slide, i) => (
           <View key={slide.title} style={[styles.slide, { width: W }]}>
-            <View style={styles.guideCard}>
-              {/* Floating gamified visual area */}
-              <View style={styles.visualArea}>
-                {i === 0 ? <QubiMascot size={88} bob /> : i === 1 ? <QubiMascot size={88} pulseGlow /> : <QubiMascot size={88} celebrating />}
+            <View style={[styles.guideCard, { maxWidth: CARD_MAX_W }]}>
+              {/* Hero: rounded-square liquid-glass tile with mascot */}
+              <View style={[styles.heroTile, { height: VISUAL_H }]}>
+                {i === 0 ? <QubiMascot size={76} bob /> : i === 1 ? <QubiMascot size={76} pulseGlow /> : <QubiMascot size={76} celebrating />}
                 {i === 0 ? (
-                  <View style={styles.flamePos}><FlamePulse /></View>
+                  <View style={styles.accentPos}><FlamePulse /></View>
                 ) : i === 1 ? (
-                  <View style={styles.xpPos}><FloatXpChip /></View>
+                  <View style={styles.accentPos}><FloatXpChip /></View>
                 ) : (
-                  <View style={styles.trophyPos}><TrophyChip /></View>
+                  <View style={styles.accentPos}><TrophyChip /></View>
                 )}
               </View>
 
@@ -151,14 +166,12 @@ export function DuolingoGuide({ onGetStarted, onSkip, onLogin, onDone }: { onGet
               <Text style={styles.slideDesc}><Text>{slide.desc}</Text></Text>
               <View style={{ height: 16 }} />
 
-              {/* Full-width 3D CTA pinned at the card bottom (h56, r16, #F97316, borderBottom 4 #C2410C) — tactile depression */}
+              {/* Full-width Neubrutalist CTA with hard offset shadow + tactile press */}
               <View style={{ width: '100%', marginTop: 8 }}>
-                {/* 3D shadow layer */}
-                <View style={styles.ctaShadow} />
                 <Animated.View style={ctaAnimatedStyle}>
                   <TouchableOpacity
                     activeOpacity={0.95}
-                    onPressIn={() => { ctaPressY.value = withSpring(4, { damping: 18, stiffness: 420 }); void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); }}
+                    onPressIn={() => { ctaPressY.value = withSpring(3, { damping: 18, stiffness: 420 }); void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); }}
                     onPressOut={() => { ctaPressY.value = withSpring(0, { damping: 16, stiffness: 360 }); }}
                     onPress={handleCta}
                     style={styles.ctaFront}
@@ -192,12 +205,12 @@ function FlamePulse() {
   return (<Animated.View style={style}><View style={styles.flameBadge}><Ionicons name="flame" size={22} color="#FFFFFF" /></View></Animated.View>);
 }
 
-/** +50 XP chip with soft float — Slide 2 floating accent */
+/** XP chip with soft float — Slide 2 floating accent */
 function FloatXpChip() {
   const y = useSharedValue(0);
   React.useEffect(() => { y.value = withRepeat(withTiming(-6, { duration: 1200 }), -1, true); }, [y]);
   const style = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
-  return (<Animated.View style={[styles.xpFloatChip, style]}><Text style={styles.xpFloatText}><Text>{'+50 XP ✨'}</Text></Text></Animated.View>);
+  return (<Animated.View style={[styles.xpFloatChip, style]}><Text style={styles.xpFloatText}><Text>{'+120 XP 🔥'}</Text></Text></Animated.View>);
 }
 
 /** Trophy chip with soft float — Slide 3 floating accent */
@@ -213,7 +226,7 @@ function StreakRows() {
   return (
     <View style={styles.statCard}>
       <View style={styles.statRow}>
-        <View style={styles.flameDot}><Ionicons name="flame" size={20} color={AppColors.primary} /></View>
+        <View style={styles.flameDot}><Ionicons name="flame" size={20} color="#F97316" /></View>
         <View style={{ marginLeft: 10 }}>
           <Text style={styles.statBig}><Text>{'12'}</Text></Text>
           <Text style={styles.statCaption}><Text>{'day streak'}</Text></Text>
@@ -269,59 +282,105 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingBottom: 10 },
   progressRow: { flexDirection: 'row', gap: 8, flex: 1 },
-  progressSegment: { height: 10, borderRadius: 6, flex: 1, overflow: 'hidden' },
-  progressHighlight: { position: 'absolute', top: 2, left: 6, right: 6, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.45)' },
-  skipButton: { paddingVertical: 4 },
-  skipText: { fontSize: 14, fontFamily: fontFamilyFor('w700') },
+  progressSegment: {
+    height: 12,
+    borderRadius: 6,
+    flex: 1,
+    borderWidth: 2,
+    borderColor: '#000',
+  },
+  skipButton: {
+    marginLeft: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#000',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    shadowOffset: { width: 2, height: 2 },
+    elevation: 2,
+  },
+  skipText: { fontSize: 14, fontFamily: fontFamilyFor('w800'), color: '#000' },
+  skipPlaceholder: { width: 12, marginLeft: 12 },
   slide: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
   guideCard: {
     width: '100%',
-    maxWidth: 320,
     backgroundColor: '#FFFFFF',
-    borderRadius: 28,
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
-    borderBottomWidth: 5,
-    borderBottomColor: '#CBD5E1',
-    padding: 20,
+    borderRadius: 20,
+    borderWidth: 2.5,
+    borderColor: '#000',
+    padding: 18,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    shadowOffset: { width: 4, height: 4 },
+    elevation: 4,
   },
-  visualArea: { width: '100%', height: 110, alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  flamePos: { position: 'absolute', top: -6, right: 18 },
-  xpPos: { position: 'absolute', top: -8, right: 10 },
-  trophyPos: { position: 'absolute', top: -8, left: 8 },
-  flameBadge: { width: 44, height: 44, borderRadius: 22, backgroundColor: AppColors.primary, alignItems: 'center', justifyContent: 'center', shadowColor: AppColors.primary, shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
-  xpFloatChip: { backgroundColor: AppColors.pathGreen, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, shadowColor: AppColors.pathGreenDeep, shadowOpacity: 0.3, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
+  heroTile: {
+    width: '100%',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#000',
+    backgroundColor: '#FFF7ED',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  accentPos: { position: 'absolute', top: 8, right: 10 },
+  flameBadge: {
+    width: 44, height: 44, borderRadius: 22, backgroundColor: '#F97316',
+    borderWidth: 2, borderColor: '#000',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  xpFloatChip: {
+    backgroundColor: '#58CC02', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999,
+    borderWidth: 2, borderColor: '#000',
+  },
   xpFloatText: { fontSize: 12, fontFamily: fontFamilyFor('w800'), color: '#FFFFFF' },
-  trophyFloatChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#FFFFFF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1.5, borderColor: '#E2E8F0', shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
+  trophyFloatChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: '#FFFFFF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999,
+    borderWidth: 2, borderColor: '#000',
+  },
   trophyFloatText: { fontSize: 11, fontFamily: fontFamilyFor('w800'), color: AppColors.ink },
   cardSpacer: { flex: 1, minHeight: 10 },
-  slideTitle: { fontSize: 24, fontFamily: fontFamilyFor('w900'), letterSpacing: -0.8, textAlign: 'center' },
-  slideDesc: { fontSize: 14, lineHeight: 21, fontFamily: fontFamilyFor('w500'), textAlign: 'center' },
+  slideTitle: { fontSize: 22, fontFamily: fontFamilyFor('w900'), letterSpacing: -0.6, textAlign: 'center', color: '#000' },
+  slideDesc: { fontSize: 14, lineHeight: 21, fontFamily: fontFamilyFor('w500'), textAlign: 'center', color: '#3F3F46' },
   loginLink: { paddingVertical: 4 },
-  loginLinkText: { fontSize: 13, fontFamily: fontFamilyFor('w700'), color: AppColors.primary },
-  statCard: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1.5, borderColor: '#E2E8F0', padding: 14 },
-  ctaShadow: { position: 'absolute', top: 0, left: 0, right: 0, height: 56, borderRadius: 16, backgroundColor: '#C2410C' },
-  ctaFront: { height: 52, borderRadius: 16, backgroundColor: '#F97316', borderWidth: 1, borderColor: '#D45A07', alignItems: 'center', justifyContent: 'center' },
+  loginLinkText: { fontSize: 13, fontFamily: fontFamilyFor('w700'), color: '#F97316' },
+  statCard: {
+    width: '100%', backgroundColor: '#FFF7ED', borderRadius: 16,
+    borderWidth: 2, borderColor: '#000', padding: 12, marginTop: 12,
+  },
+  ctaFront: {
+    height: 52, borderRadius: 16, backgroundColor: '#F97316',
+    borderWidth: 2.5, borderColor: '#000',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOpacity: 1, shadowRadius: 0,
+    shadowOffset: { width: 0, height: 4 }, elevation: 4,
+  },
   ctaFrontText: { fontSize: 16, fontFamily: fontFamilyFor('w800'), color: '#FFFFFF', letterSpacing: -0.2 },
   statRow: { flexDirection: 'row', alignItems: 'center' },
   statSpacer: { flex: 1 },
-  statBig: { fontSize: 20, fontFamily: fontFamilyFor('w800'), color: AppColors.ink, letterSpacing: -0.4 },
+  statBig: { fontSize: 20, fontFamily: fontFamilyFor('w800'), color: '#000', letterSpacing: -0.4 },
   statCaption: { fontSize: 11, fontFamily: fontFamilyFor('w600'), color: AppColors.muted },
-  flameDot: { width: 40, height: 40, borderRadius: 20, backgroundColor: withAlpha(AppColors.primary, 0.14), alignItems: 'center', justifyContent: 'center' },
-  goalChip: { backgroundColor: withAlpha(AppColors.pathGreen, 0.14), paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
-  goalChipText: { fontSize: 11, fontFamily: fontFamilyFor('w800'), color: AppColors.pathGreenDeep },
-  rewardRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: withAlpha(AppColors.sky, 0.12), paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  flameDot: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: withAlpha('#F97316', 0.14),
+    borderWidth: 2, borderColor: '#000', alignItems: 'center', justifyContent: 'center',
+  },
+  goalChip: { backgroundColor: withAlpha('#58CC02', 0.16), paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 2, borderColor: '#000' },
+  goalChipText: { fontSize: 11, fontFamily: fontFamilyFor('w800'), color: '#3A7D00' },
+  rewardRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: withAlpha(AppColors.sky, 0.12), paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 2, borderColor: '#000' },
   rewardText: { fontSize: 11, fontFamily: fontFamilyFor('w700'), color: AppColors.skyDeep },
   leaderRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
-  leaderDivider: { borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  leaderName: { fontSize: 14, fontFamily: fontFamilyFor('w700'), color: AppColors.ink },
-  leaderXp: { fontSize: 12, fontFamily: fontFamilyFor('w800'), color: AppColors.pathGreenDeep },
+  leaderDivider: { borderBottomWidth: 1.5, borderBottomColor: '#00000022' },
+  leaderName: { fontSize: 14, fontFamily: fontFamilyFor('w700'), color: '#000' },
+  leaderXp: { fontSize: 12, fontFamily: fontFamilyFor('w800'), color: '#3A7D00' },
 });
 
 export default DuolingoGuide;

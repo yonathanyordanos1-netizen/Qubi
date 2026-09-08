@@ -14,9 +14,9 @@ import type { Habit } from '../types/models';
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 const VISION_MODELS = [
   AppConfig.openRouterVisionModel,
-  'google/gemma-3-27b-it:free',
-  'meta-llama/llama-4-maverick:free',
-  'nvidia/nemotron-nano-12b-v2-vl:free',
+  'google/gemma-4-26b-a4b-it:free',
+  'google/gemma-4-31b-it:free',
+  'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
 ].filter((m, i, a) => m.length > 0 && a.indexOf(m) === i);
 
 /**

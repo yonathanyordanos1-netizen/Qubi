@@ -79,15 +79,6 @@ function Root() {
   const { isDark, colors } = useTheme();
   const insets = useSafeAreaInsets();
 
-  // TEMP DEBUG: set EXPO_PUBLIC_MINIMAL=1 in .env to bypass all screens.
-  if (process.env.EXPO_PUBLIC_MINIMAL === '1') {
-    return (
-      <View style={[styles.flex, styles.center, { backgroundColor: colors.canvas }]}>
-        <Text style={{ color: colors.ink }}>Minimal mode OK</Text>
-      </View>
-    );
-  }
-
   const activeTab = useAppStore((s) => s.activeTab);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
   // SPEC §1 — flow gates: persisted first-time-user flags from local storage

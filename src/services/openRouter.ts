@@ -119,14 +119,13 @@ const APP_URL = 'https://Qubi.app';
 const APP_TITLE = 'Qubi';
 
 const FALLBACK_CHAT_MODELS = [
-  'minimax/minimax-m3:free',
   'google/gemma-4-26b-a4b-it:free',
-  'google/gemma-3-27b-it:free',
+  'google/gemma-4-31b-it:free',
 ];
 const FALLBACK_VISION_MODELS = [
-  'google/gemma-3-27b-it:free',
-  'meta-llama/llama-4-maverick:free',
-  'nvidia/nemotron-nano-12b-v2-vl:free',
+  'google/gemma-4-26b-a4b-it:free',
+  'google/gemma-4-31b-it:free',
+  'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
 ];
 
 function dedupe(models: string[]): string[] {
