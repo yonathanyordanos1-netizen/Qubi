@@ -32,10 +32,36 @@ function extraValue(key: string): string {
   }
 }
 
+/**
+ * Tier-1 values — STATIC member expressions on purpose.
+ *
+ * The Expo babel plugin inlines `process.env.EXPO_PUBLIC_*` at bundle time,
+ * but ONLY for static access (`process.env.FOO`). Dynamic access
+ * (`process.env[key]`) survives into the Release binary where `process.env`
+ * is empty — which is exactly why CI secrets previously never reached the
+ * shipped .ipa. Every key the app needs is therefore read once here,
+ * statically, so the GitHub Actions secrets are baked into the bundle.
+ * Values are `string | undefined`; empty means "tier not present".
+ */
+const INLINE_SUPABASE_URL: string | undefined = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const INLINE_SUPABASE_ANON_KEY: string | undefined = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const INLINE_OPENROUTER_API_KEY: string | undefined = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY;
+const INLINE_OPENROUTER_MODEL: string | undefined = process.env.EXPO_PUBLIC_OPENROUTER_MODEL;
+const INLINE_OPENROUTER_VISION_MODEL: string | undefined =
+  process.env.EXPO_PUBLIC_OPENROUTER_VISION_MODEL;
+
+const INLINE_TIER: Record<string, string | undefined> = {
+  EXPO_PUBLIC_SUPABASE_URL: INLINE_SUPABASE_URL,
+  EXPO_PUBLIC_SUPABASE_ANON_KEY: INLINE_SUPABASE_ANON_KEY,
+  EXPO_PUBLIC_OPENROUTER_API_KEY: INLINE_OPENROUTER_API_KEY,
+  EXPO_PUBLIC_OPENROUTER_MODEL: INLINE_OPENROUTER_MODEL,
+  EXPO_PUBLIC_OPENROUTER_VISION_MODEL: INLINE_OPENROUTER_VISION_MODEL,
+};
+
 /** Resolves an EXPO_PUBLIC_* value with hardcoded fallback for Release IPAs. */
 export function envValue(key: string, fallback = ''): string {
-  const processValue = process.env[key];
-  if (processValue != null && processValue !== '') return processValue;
+  const inline = INLINE_TIER[key];
+  if (inline != null && inline !== '') return inline;
   const fromExtra = extraValue(key);
   if (fromExtra.length > 0) return fromExtra;
   const builtin = BUILTIN_FALLBACKS[key];
@@ -58,6 +84,6 @@ export const Env = {
     return envValue('EXPO_PUBLIC_OPENROUTER_MODEL', 'nvidia/nemotron-3-ultra-550b-a55b:free');
   },
   get openRouterVisionModel(): string {
-    return envValue('EXPO_PUBLIC_OPENROUTER_VISION_MODEL', 'google/gemma-3-27b-it:free');
+    return envValue('EXPO_PUBLIC_OPENROUTER_VISION_MODEL', 'google/gemma-4-26b-a4b-it:free');
   },
 } as const;
