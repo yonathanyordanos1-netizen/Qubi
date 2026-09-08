@@ -32,14 +32,15 @@ import { StrokeIcon } from '../components/AppIcons';
 import { CameraIcon } from '../components/CameraIcon';
 import { CrossModal } from '../components/CrossModal';
 import { ProofSuccessModal, type ProofSuccessInfo } from '../components/ProofSuccessModal';
+import { CelebrationOverlay } from '../components/animations/CelebrationOverlay';
 import { QubiMascot } from '../components/QubiMascot';
 import { useNav } from './navContext';
 import { useAppStore, selectPendingTodayHabits, selectCompletedCount } from '../state/appStore';
 import { useSettingsStore } from '../state/settingsStore';
-import { OpenRouterServiceInstance, VisionVerdict, AiHttpException } from '../services/openRouter';
+import { VisionVerdict, AiHttpException } from '../services/openRouter';
 import { SupabaseServiceInstance } from '../services/supabase';
 import { takeQuestProofPhoto, pickQuestProofPhoto } from '../services/photoProofService';
-import { verifyProofWithAI, type VisionVerificationResult } from '../services/visionService';
+import { verifyCameraProof, awardProofXp, type VisionVerificationResult } from '../services/aiProofService';
 import type { Habit } from '../types/models';
 
 type ProofStage = 'camera' | 'analyzing' | 'verified' | 'rejected';
@@ -100,6 +101,7 @@ function AutonomousProofSheet({
   const [flashOn, setFlashOn] = useState(false);
   const [result, setResult] = useState<VisionVerificationResult | null>(null);
   const [reward, setReward] = useState<ProofSuccessInfo | null>(null);
+  const [showFx, setShowFx] = useState(true);
 
   const cameraRef = useRef<CameraView | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
@@ -114,7 +116,7 @@ function AutonomousProofSheet({
     async (cap: Capture | null) => {
       let v: VisionVerificationResult;
       try {
-        v = await verifyProofWithAI(cap?.base64 ?? '', pending);
+        v = await verifyCameraProof(cap?.base64 ?? '', pending);
       } catch {
         v = {
           success: false,
@@ -124,6 +126,11 @@ function AutonomousProofSheet({
           matchedQuestTitle: null,
           xpEarned: 0,
           message: 'Verification failed — try again or choose a quest manually.',
+          confidence: null,
+          difficulty: null,
+          taskName: null,
+          qubiComment: null,
+          reasoning: null,
         };
       }
 
@@ -140,16 +147,23 @@ function AutonomousProofSheet({
           useSettingsStore.getState().celebrate();
           const xpBefore = useAppStore.getState().xp;
           const completionsBefore = selectCompletedCount(useAppStore.getState());
-          await useAppStore.getState().verifyHabit(matched.id);
+          const { xp: xpAfter, streak } = await awardProofXp(matched.id, undefined, {
+            xpAmount: v.xpEarned,
+            difficulty: v.difficulty ?? 'Medium',
+            taskName: v.taskName ?? matched.name,
+          });
+          setShowFx(true);
           const after = useAppStore.getState();
           setReward({
             habitName: matched.name,
-            xpGained: Math.max(50, after.xp - xpBefore),
+            xpGained: Math.max(0, xpAfter - xpBefore),
             xpBefore,
-            xpAfter: after.xp,
-            streak: after.streak,
+            xpAfter,
+            streak,
             completionsBefore,
             completionsAfter: selectCompletedCount(after),
+            difficulty: v.difficulty ?? undefined,
+            qubiComment: v.qubiComment ?? undefined,
           });
         }
       }
@@ -353,16 +367,34 @@ function AutonomousProofSheet({
         </View>
 
         {reward != null ? (
-          <ProofSuccessModal
-            info={reward}
-            onContinue={onClose}
-            onSnapAnother={() => {
-              setReward(null);
-              setResult(null);
-              setCaptured(null);
-              setStage('camera');
-            }}
-          />
+          <>
+            {showFx ? (
+              <CelebrationOverlay
+                key={`fx-${reward.habitName}-${reward.completionsAfter}`}
+                visible
+                silent
+                hideHeroCard
+                oldXp={reward.xpBefore}
+                newXp={reward.xpAfter}
+                oldLevel={1 + Math.floor(Math.max(0, reward.xpBefore) / 500)}
+                newLevel={1 + Math.floor(Math.max(0, reward.xpAfter) / 500)}
+                xpGained={reward.xpGained}
+                habitName={reward.habitName}
+                onDone={() => {}}
+                onLevelUpDone={() => setShowFx(false)}
+              />
+            ) : null}
+            <ProofSuccessModal
+              info={reward}
+              onContinue={onClose}
+              onSnapAnother={() => {
+                setReward(null);
+                setResult(null);
+                setCaptured(null);
+                setStage('camera');
+              }}
+            />
+          </>
         ) : null}
       </View>
     </CrossModal>
@@ -417,7 +449,7 @@ function AutoResultStage({
           numberOfLines={2}
           style={[styles.matchChipText, { flexShrink: 1, color: ok ? AppColors.rewardInkMid : AppColors.error }]}
         >
-          {ok ? '92% Match · Verified!' : 'No confident match'}
+          {ok && result?.confidence != null ? `${Math.round(result.confidence * 100)}% Match · Verified!` : ok ? 'Verified!' : 'No confident match'}
         </Text>
       </View>
       <View style={{ height: 14 }} />
@@ -530,7 +562,7 @@ function ProofInfoToast() {
     <View style={[styles.infoBanner, { backgroundColor: withAlpha(AppColors.rewardBlue, 0.1) }]}>
       <CameraIcon size={14} color={AppColors.rewardInkMid} backgroundColor="transparent" />
       <View style={{ width: 8 }} />
-      <Text style={[styles.infoBannerText, { color: AppColors.mutedLight }]}>Camera-only proof · AI verified · +50 XP</Text>
+      <Text style={[styles.infoBannerText, { color: AppColors.mutedLight }]}>Camera-only proof · AI verified · graded XP</Text>
       <Pressable onTap={() => setVisible(false)} scale={0.9}>
         <View style={styles.infoBannerClose}>
           <StrokeIcon name="close" size={13} color={AppColors.mutedLight} strokeWidth={2.4} />
@@ -553,6 +585,7 @@ export default function PhotoProofSheet({ habit, onClose }: { habit: Habit; onCl
   const [busy, setBusy] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
   const [reward, setReward] = useState<ProofSuccessInfo | null>(null);
+  const [showFx, setShowFx] = useState(true);
 
   const cameraRef = useRef<CameraView | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
@@ -565,12 +598,11 @@ export default function PhotoProofSheet({ habit, onClose }: { habit: Habit; onCl
 
   const runAnalysis = useCallback(
     async (capLocal: Capture | null, demoLocal: boolean) => {
-      let v: VisionVerdict;
+      // Graded pipeline: same difficulty + scaled-XP verdict as the
+      // autonomous flow, scoped to this one quest.
+      let v: VisionVerificationResult;
       try {
-        v = await OpenRouterServiceInstance.verifyPhoto({
-          base64: demoLocal || capLocal == null ? '' : capLocal.base64,
-          expected: habit.name,
-        });
+        v = await verifyCameraProof(demoLocal || capLocal == null ? '' : capLocal.base64, [habit]);
       } catch (e) {
         const reason =
           e instanceof AiHttpException ? e.userMessage : 'The verifier is unreachable right now. Try again.';
@@ -579,7 +611,7 @@ export default function PhotoProofSheet({ habit, onClose }: { habit: Habit; onCl
         return;
       }
 
-      if (v.verified) {
+      if (v.success && v.matchedQuestId === habit.id) {
         let proofPath: string | null = null;
         if (SupabaseServiceInstance.isConfigured && capLocal != null) {
           try {
@@ -591,21 +623,34 @@ export default function PhotoProofSheet({ habit, onClose }: { habit: Habit; onCl
         useSettingsStore.getState().celebrate();
         const xpBefore = useAppStore.getState().xp;
         const completionsBefore = selectCompletedCount(useAppStore.getState());
-        await useAppStore.getState().verifyHabit(habit.id, proofPath ?? undefined);
+        const { xp: xpAfter, streak } = await awardProofXp(habit.id, proofPath ?? undefined, {
+          xpAmount: v.xpEarned,
+          difficulty: v.difficulty ?? 'Medium',
+          taskName: v.taskName ?? habit.name,
+        });
+        setShowFx(true);
         const after = useAppStore.getState();
         setReward({
           habitName: habit.name,
-          xpGained: Math.max(50, after.xp - xpBefore),
+          xpGained: Math.max(0, xpAfter - xpBefore),
           xpBefore,
           xpAfter: after.xp,
-          streak: after.streak,
+          streak,
           completionsBefore,
           completionsAfter: selectCompletedCount(after),
+          difficulty: v.difficulty ?? undefined,
+          qubiComment: v.qubiComment ?? undefined,
         });
       }
 
-      setVerdict(v);
-      setStage(v.verified ? 'rejected' : 'rejected');
+      setVerdict(
+        new VisionVerdict(
+          v.success,
+          v.confidence ?? (v.success ? 0.9 : 0),
+          v.success ? (v.qubiComment ?? v.message) : v.message,
+        ),
+      );
+      setStage('rejected');
     },
     [habit.id, habit.name],
   );
@@ -735,14 +780,32 @@ export default function PhotoProofSheet({ habit, onClose }: { habit: Habit; onCl
 
         {/* Duolingo-style reward overlay — Continue returns straight to the dashboard */}
         {reward != null ? (
-          <ProofSuccessModal
-            info={reward}
-            onContinue={onClose}
-            onSnapAnother={() => {
-              setReward(null);
-              setStage('camera');
-            }}
-          />
+          <>
+            {showFx ? (
+              <CelebrationOverlay
+                key={`fx-${reward.habitName}-${reward.completionsAfter}`}
+                visible
+                silent
+                hideHeroCard
+                oldXp={reward.xpBefore}
+                newXp={reward.xpAfter}
+                oldLevel={1 + Math.floor(Math.max(0, reward.xpBefore) / 500)}
+                newLevel={1 + Math.floor(Math.max(0, reward.xpAfter) / 500)}
+                xpGained={reward.xpGained}
+                habitName={reward.habitName}
+                onDone={() => {}}
+                onLevelUpDone={() => setShowFx(false)}
+              />
+            ) : null}
+            <ProofSuccessModal
+              info={reward}
+              onContinue={onClose}
+              onSnapAnother={() => {
+                setReward(null);
+                setStage('camera');
+              }}
+            />
+          </>
         ) : null}
       </View>
     </CrossModal>
@@ -928,7 +991,7 @@ function AnalyzingStage({
       <Text style={styles.analyzeTitle}>Analyzing photo proof…</Text>
       <View style={{ height: 6 }} />
       <Text style={styles.analyzeSubtitle}>
-        {demoCapture ? 'Demo capture — camera unavailable on this device' : 'Qubi is inspecting your proof... 🔍'}
+        {demoCapture ? 'Preview capture — camera unavailable on this device' : 'Qubi is inspecting your proof... 🔍'}
       </Text>
     </View>
   );
@@ -1222,6 +1285,16 @@ const styles = StyleSheet.create({
   cancelButtonText: { fontWeight: '700', fontSize: 15, fontFamily: fontFamilyFor('w700') },
   retakeButton: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   retakeButtonText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15, fontFamily: fontFamilyFor('w800') },
+  treatLine: {
+    color: AppColors.success,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    fontFamily: fontFamilyFor('w700'),
+  },
+  doneButton: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  doneButtonText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15, fontFamily: fontFamilyFor('w800') },
   /* Autonomous proof sheet */
   autoManualLink: {
     alignSelf: 'center',

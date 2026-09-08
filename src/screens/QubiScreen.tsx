@@ -68,6 +68,26 @@ const THINKING_PHRASES: Record<'greeting' | 'routine' | 'general', readonly stri
 const GREETING_RE = /^(hey|hi+|hello+|yo|good\s*(morning|afternoon|evening)|sup)\b/i;
 const ROUTINE_THINKING_RE = /(wake|day|schedul|routine|plan|quest|habit|morning|afternoon|evening|x p|xp)/i;
 
+/** Stopwords stripped when deriving the "Thinking about …" topic. */
+const TOPIC_STOPWORDS = new Set([
+  'the', 'and', 'for', 'with', 'what', 'whats', "what's", 'how', 'why', 'when',
+  'can', 'you', 'your', 'yours', 'please', 'about', 'from', 'into', 'that',
+  'this', 'with', 'have', 'has', 'are', 'was', 'were', 'will', 'would', 'should',
+  'could', 'does', 'did', 'qubi', 'hey', 'hello', 'please',
+]);
+
+/** Derives up to 3 key terms from the prompt for the thinking banner. */
+export function extractThinkingTopic(prompt: string): string {
+  const words = prompt
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !TOPIC_STOPWORDS.has(w));
+  const topic = words.slice(0, 3).join(' ');
+  if (topic.length === 0) return 'your request';
+  return topic.length > 28 ? `${topic.slice(0, 28)}…` : topic;
+}
+
 function classifyIntent(prompt: string): keyof typeof THINKING_PHRASES {
   const lower = prompt.toLowerCase().trim();
   if (GREETING_RE.test(lower)) return 'greeting';
@@ -416,7 +436,7 @@ export default function QubiScreen({ onClose }: { onClose?: () => void }) {
               </Text>
               <View style={{ width: 8 }} />
               <AppBadge
-                label={online ? 'live' : 'demo'}
+                label={online ? 'AI' : 'Offline'}
                 variant={online ? AppBadgeVariant.success : AppBadgeVariant.gold}
                 dense
               />
@@ -483,7 +503,7 @@ export default function QubiScreen({ onClose }: { onClose?: () => void }) {
                   <StrokeIcon name="zap" size={15} color={AppColors.gold} strokeWidth={2.3} />
                   <View style={{ width: 8 }} />
                   <Text style={[styles.demoNoteText, { color: colors.muted }]}>
-                    Demo mode — add your OpenRouter API key to .env and Qubi goes live.
+                    You're offline — connect to unlock smarter coaching.
                   </Text>
                 </View>
               </>
@@ -592,9 +612,8 @@ export default function QubiScreen({ onClose }: { onClose?: () => void }) {
                   styles.streamingBubble,
                   {
                     backgroundColor: isDark ? AppColors.glassDark : AppColors.glassLight,
-                    borderColor: AppColors.glassEdge,
+                    borderColor: '#000000',
                   },
-                  GlassShadow,
                 ]}
               >
                 {streamingText.length === 0 ? (
@@ -739,10 +758,10 @@ function ChatBubble({
               ? { backgroundColor: AppColors.primary }
               : {
                   backgroundColor: isDark ? AppColors.glassDark : AppColors.glassLight,
-                  borderWidth: 1,
-                  borderColor: AppColors.glassEdge,
+                  borderWidth: 2.5,
+                  borderColor: '#000000',
                 },
-            fromUser ? styles.userBubbleShadow : GlassShadow,
+            styles.userBubbleShadow,
           ]}
         >
           <Text style={[styles.bubbleText, { color: fromUser ? '#FFFFFF' : colors.ink }]}>{text}</Text>
@@ -771,26 +790,24 @@ function ChatBubble({
 /* ── Thinking indicator ────────────────────────────────────── */
 
 /**
- * Context-aware thinking indicator — replaces the generic three-dot spinner.
- * Phrases adapt to the user's intent and cycle every 1.8s while awaiting the
- * AI; disappears as soon as the first response tokens stream in.
+ * Dynamic thinking banner — "Thinking about [topic]…" derived from the user's
+ * prompt key terms, with an animated ellipsis. Single Qubi avatar lives in the
+ * parent streaming row, so this renders text-only (no double avatar).
  */
 export function QubiThinkingIndicator({ userPrompt }: { userPrompt: string }) {
   const { colors } = useTheme();
-  const phrases = THINKING_PHRASES[classifyIntent(userPrompt)];
-  const [idx, setIdx] = useState(0);
+  const topic = extractThinkingTopic(userPrompt);
+  const [dots, setDots] = useState(0);
 
   useEffect(() => {
-    const id = setInterval(() => setIdx((i) => (i + 1) % phrases.length), 1800);
+    const id = setInterval(() => setDots((i) => (i + 1) % 4), 450);
     return () => clearInterval(id);
-  }, [phrases]);
+  }, []);
 
   return (
-    <View style={styles.thinkingRow}>
-      <QubiMascot size={16} bob={false} />
-      <View style={{ width: 7 }} />
-      <Text numberOfLines={2} style={[styles.thinkingText, { color: colors.muted }]}>
-        {phrases[idx % phrases.length]}
+    <View style={styles.thinkingBanner}>
+      <Text numberOfLines={2} style={[styles.thinkingText, { color: colors.ink }]}>
+        <Text>{`Thinking about ${topic}${'.'.repeat(dots)}`}</Text>
       </Text>
     </View>
   );
@@ -893,19 +910,23 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 18,
     borderBottomLeftRadius: 18,
     borderBottomRightRadius: 6,
+    borderWidth: 2.5,
+    borderColor: '#000000',
   },
   bubbleAssistant: {
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     borderBottomLeftRadius: 6,
     borderBottomRightRadius: 18,
+    borderWidth: 2.5,
+    borderColor: '#000000',
   },
   userBubbleShadow: {
-    shadowColor: AppColors.primary,
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
+    shadowColor: '#000000',
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    shadowOffset: { width: 4, height: 4 },
+    elevation: 0,
   },
   bubbleText: {
     fontSize: 13.5,
@@ -916,7 +937,8 @@ const styles = StyleSheet.create({
   streamingBubble: {
     flex: 1,
     maxWidth: '78%',
-    borderWidth: 1,
+    borderWidth: 2.5,
+    borderColor: '#000000',
     borderRadius: 18,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
@@ -924,6 +946,11 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 13,
+    shadowColor: '#000000',
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    shadowOffset: { width: 4, height: 4 },
+    elevation: 0,
   },
   goTasksWrap: { paddingLeft: 38, paddingTop: 8 },
   goTasksPill: {
@@ -1048,6 +1075,19 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilyFor('w800'),
   },
   /* Thinking indicator */
+  thinkingBanner: {
+    backgroundColor: '#FFC800',
+    borderWidth: 2.5,
+    borderColor: '#000000',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    shadowColor: '#000000',
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    shadowOffset: { width: 4, height: 4 },
+    elevation: 0,
+  },
   thinkingRow: { flexDirection: 'row', alignItems: 'center' },
   thinkingText: {
     flex: 1,

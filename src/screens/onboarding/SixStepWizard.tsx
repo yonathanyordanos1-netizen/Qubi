@@ -163,7 +163,7 @@ function SixStepWizardInner({ onOtpRequired }: { onOtpRequired?: (email: string)
   const usernameBorder = username.length === 0 ? (focused === 'username' ? focusedBorder : inputBorder) : isUsernameValid ? withAlpha('#16A34A', 0.55) : withAlpha('#EF4444', 0.5);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? AppColors.canvasDark : '#FFFFFF' }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? AppColors.canvasDark : '#FFF7ED' }]}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         {/* Header: 6-segment progress + back arrow */}
         <View style={[styles.headerBar, { paddingTop: 8, paddingHorizontal: 24 }]}>

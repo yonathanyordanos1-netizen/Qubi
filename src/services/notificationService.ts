@@ -25,6 +25,20 @@ const DAILY_CHANNEL_NAME = 'Daily quest reminders';
 const HABIT_CHANNEL_ID = 'Qubi_habit_pings';
 const HABIT_CHANNEL_NAME = 'Qubi quest pings';
 
+/**
+ * True inside the Expo Go sandbox. Push tokens minted there route to the
+ * Expo Go app, and locally scheduled reminders also surface as Expo Go —
+ * production notifications must only ever come from the standalone IPA, so
+ * every send path below (remote registration + local scheduling) no-ops here.
+ */
+export function isExpoGo(): boolean {
+  try {
+    return Constants.appOwnership === 'expo';
+  } catch {
+    return false;
+  }
+}
+
 // Show alerts while the app is foregrounded (mirrors high-importance heads-up).
 // Skipped on web where expo-notifications is unavailable.
 // Wrapped in try/catch for Expo Go / Web where native module may be stubbed.
@@ -76,12 +90,15 @@ async function ensureInitialized(): Promise<boolean> {
 /**
  * Captures the Expo push token and stores it on the user's profile so the
  * backend can deliver friend nudges, friend requests and streak alerts.
- * Silently no-ops in Expo Go on Android (remote push unsupported) or offline.
+ * Standalone/IPA builds only — silently no-ops in Expo Go (its token would
+ * route production broadcasts into the Expo Go app), on web, or offline.
  */
 export async function registerPushToken(): Promise<void> {
   try {
     if (Platform.OS === 'web') return;
-    // Push requires the EAS projectId baked into the bundle (app.json extra).
+    // Never register from Expo Go — that token would route broadcasts into
+    // the Expo Go app instead of the standalone IPA.
+    if (isExpoGo()) return;
     if (!Constants.expoConfig?.extra?.eas?.projectId) return;
     let settings = await Notifications.getPermissionsAsync();
     let granted = settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
@@ -129,6 +146,9 @@ export async function applyNotificationSettings(opts: {
   reminderTime: string;
   streakAlerts: boolean;
 }): Promise<void> {
+  // Expo Go must stay silent — locally scheduled reminders would otherwise
+  // surface as Expo Go notifications instead of coming from the IPA.
+  if (isExpoGo()) return;
   if (!(await ensureInitialized())) return;
   habitRemindersEnabled = opts.remindersEnabled;
   if (opts.remindersEnabled) {
@@ -160,6 +180,8 @@ export async function cancelAllNotifications(): Promise<void> {
  */
 export async function applyHabitReminders(opts: { habits: Habit[] }): Promise<void> {
   lastHabits = opts.habits;
+  // Expo Go must stay silent (see applyNotificationSettings).
+  if (isExpoGo()) return;
   if (!habitRemindersEnabled) return;
   await rescheduleHabitReminders();
 }

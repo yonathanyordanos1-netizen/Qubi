@@ -14,7 +14,7 @@ interface SplashProps {
 // Crash-fix: use Qubi_2.jpg (not png) from ./Qubi — Expo Go asset resolution
 const QUBI = require('../../Qubi/Qubi_2.jpg');
 
-export function Splash({ onFinish, minimumDuration = 2500, maxWaitMs = 3000, backgroundColor = '#F97316' }: SplashProps) {
+export function Splash({ onFinish, minimumDuration = 2500, maxWaitMs = 3000, backgroundColor = '#58CC02' }: SplashProps) {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const overlayOpacity = useRef(new RNAnimated.Value(1)).current;

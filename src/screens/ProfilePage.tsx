@@ -100,9 +100,9 @@ export function ProfilePage() {
   const earnedBadges = badges.filter((b) => b.earned).length;
   const accent = isSignedIn ? AppColors.success : isDemo ? AppColors.gold : colors.muted;
   const providerLabel = isSignedIn
-    ? 'Signed in with Google · synced'
+    ? 'Signed in · progress synced'
     : isDemo
-      ? 'Local demo — backend not connected'
+      ? 'Private progress · sign in to sync'
       : 'Not signed in';
 
   return (
@@ -540,16 +540,18 @@ function EditProfileSheet({
               styles.sheet,
               {
                 backgroundColor: colors.glassBacking,
-                borderColor: colors.glassEdge,
-                shadowColor: '#000',
-                shadowOpacity: 0.15,
-                shadowRadius: 24,
-                shadowOffset: { width: 0, height: -6 },
-                elevation: 24,
+                borderColor: '#000000',
+                borderWidth: 2.5,
+                borderRadius: 24,
+                shadowColor: '#000000',
+                shadowOpacity: 1,
+                shadowRadius: 0,
+                shadowOffset: { width: 4, height: 4 },
+                elevation: 0,
               },
             ]}
           >
-            <Text style={[styles.sheetTitle, { color: colors.ink }]}>Edit Profile</Text>
+            <Text style={[styles.sheetTitle, { color: colors.ink, textAlign: 'center', alignSelf: 'stretch' }]}>Edit Profile</Text>
             <View style={{ height: 16 }} />
             <SheetField icon="user" hint="Full Name" value={name} onChange={setName} />
             <View style={{ height: 12 }} />

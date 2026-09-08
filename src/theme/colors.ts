@@ -118,6 +118,15 @@ export const AppColors = {
   pathLocked: '#E5E5E5',
   pathLockedBorder: '#DCDCDC',
   pathLockedInk: '#B0B0B0',
+
+  /* ── Neubrutalism + Liquid Glass accents (Duolingo-inspired) ────────── */
+  duoGreen: '#58CC02',
+  duoGreenDeep: '#58A700',
+  duoYellow: '#FFC800',
+  duoRed: '#FF4B4B',
+  duoBlue: '#1CB0F6',
+  duoBlueDeep: '#0B9BD8',
+  neoInk: '#000000',
 } as const;
 
 /** Applies an alpha to a hex color → rgba() string */

@@ -7,7 +7,6 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
 import { AppColors, withAlpha } from '../theme/colors';
@@ -122,9 +121,9 @@ export function RanksPage() {
         bounces
       >
         {tab === 'rank' ? (
-          <Animated.View key="rank" entering={FadeInDown.duration(300)}>
+          <View key="rank">
       {/* ── Your rank card ── */}
-      <Animated.View entering={FadeInDown.duration(500)}>
+      <View>
         <View
           style={[
             styles.rankCard,
@@ -155,13 +154,13 @@ export function RanksPage() {
             {next != null ? `${toNext} XP to ${rankEmoji(next)} ${rankLabel(next)}` : 'Max Rank!'}
           </Text>
         </View>
-      </Animated.View>
+      </View>
 
       {/* ── Live activity toast ── */}
       {activity.length > 0 && (
-        <Animated.View entering={FadeInDown.duration(300)} style={{ marginBottom: 12 }}>
+        <View style={{ marginBottom: 12 }}>
           <LiveActivityToast events={activity} />
-        </Animated.View>
+        </View>
       )}
 
       {/* ── All ranks ladder ── */}
@@ -212,9 +211,9 @@ export function RanksPage() {
         );
       })}
       <View style={{ height: 16 }} />
-          </Animated.View>
+          </View>
         ) : (
-          <Animated.View key="leaderboard" entering={FadeInDown.duration(300)}>
+          <View key="leaderboard">
       {/* ── Leaderboard header ── */}
       <View style={styles.leaderHeader}>
         <Text style={[styles.sectionTitle, { color: colors.ink, paddingLeft: 0 }]}>Leaderboard</Text>
@@ -226,7 +225,7 @@ export function RanksPage() {
       {league.map((entry) => (
         <LeaderRow key={`${entry.name}_${entry.rank}`} entry={entry} />
       ))}
-          </Animated.View>
+          </View>
         )}
       </ScrollView>
     </View>

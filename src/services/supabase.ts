@@ -557,13 +557,37 @@ class SupabaseService {
     return (data[0]['id'] as string) ?? null;
   }
 
-  /** Banks +50 XP atomically server-side. Only fires when not already verified. */
-  async verifyCompletion(completionId: string, proofUrl?: string): Promise<void> {
+  /** Banks the AI-graded XP amount atomically server-side (xp + total_xp + level). */
+  async verifyCompletion(completionId: string, proofUrl?: string, xpAmount = 50): Promise<void> {
     if (!this.isConfigured || this.userId == null) return;
     await this.client.rpc('verify_completion', {
       p_completion_id: completionId,
       p_proof_url: proofUrl ?? '',
+      p_xp_amount: Math.max(0, Math.min(120, Math.round(xpAmount))),
     });
+  }
+
+  /** Persists a graded proof to the user-history ledger (difficulty + XP). */
+  async insertActivityProof(opts: {
+    habitId?: string;
+    taskName: string;
+    difficulty: string;
+    xpAwarded: number;
+    photoUrl?: string;
+    reasoning?: string;
+  }): Promise<void> {
+    if (!this.isConfigured || this.userId == null) return;
+    try {
+      await this.client.from('activity_proofs').insert({
+        user_id: this.userId,
+        habit_id: opts.habitId ?? null,
+        task_name: opts.taskName,
+        difficulty_level: opts.difficulty,
+        xp_awarded: Math.max(0, Math.min(120, Math.round(opts.xpAwarded))),
+        photo_url: opts.photoUrl ?? null,
+        reasoning: opts.reasoning ?? null,
+      });
+    } catch {}
   }
 
   async incrementXp(amount: number): Promise<void> {

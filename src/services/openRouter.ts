@@ -185,7 +185,7 @@ export class AiHttpException extends Error {
       );
     }
     if (this.statusCode === 401 || this.statusCode === 403) {
-      return 'AI is configured but the key was rejected. Check OPENROUTER_API_KEY in .env.';
+      return 'My AI key was rejected — please try again in a moment.';
     }
     if (this.statusCode === 429) {
       return 'All the free AI models are rate-limited at the moment. Give it a few seconds, then try again.';
@@ -429,7 +429,7 @@ class OpenRouterService {
       throw new AiHttpException(400, 'No photo captured to verify.');
     }
     if (!this.isConfigured) {
-      throw new AiHttpException(403, 'AI is not configured. Check OPENROUTER_API_KEY in .env.');
+      throw new AiHttpException(403, "AI isn't connected right now — please try again in a moment.");
     }
 
     let lastError: AiHttpException | null = null;
@@ -447,6 +447,7 @@ class OpenRouterService {
   }
 
   private async verifyWithModel(model: string, base64: string, expected: string): Promise<VisionVerdict> {
+    const clean = base64.trim().replace(/^data:[^,]*,/, '').replace(/\s+/g, '');
     const res = await withTimeout(
       fetch(ENDPOINT, {
         method: 'POST',
@@ -473,7 +474,7 @@ class OpenRouterService {
                     'that it cannot be proved (example: "The photo shows a coffee cup, not your book — ' +
                     'this cannot be proved.").',
                 },
-                { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}` } },
+                { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${clean}` } },
               ],
             },
           ],

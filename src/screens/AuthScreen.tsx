@@ -385,7 +385,7 @@ export default function AuthScreen({ onAuthed }: { onAuthed: () => void }) {
             <StrokeIcon name="play" size={15} color={colors.ink} strokeWidth={2.3} />
             <View style={{ width: 8 }} />
             <Text style={{ fontFamily: fontFamilyFor('w600'), fontSize: 14, color: colors.ink }}>
-              Explore in demo mode
+              Continue as guest
             </Text>
           </View>
         </Pressable>

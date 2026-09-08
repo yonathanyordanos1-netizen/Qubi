@@ -86,8 +86,8 @@ export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const muted = colors.muted;
 
   const statusText = useMemo(() => {
-    if (isSignedIn) return 'Synced to Supabase';
-    if (isDemo) return 'Local demo — backend not connected';
+    if (isSignedIn) return 'Progress synced';
+    if (isDemo) return 'Private progress · sign in to sync';
     return 'Not signed in — sign in to sync';
   }, [isSignedIn, isDemo]);
 

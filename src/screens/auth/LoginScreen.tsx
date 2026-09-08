@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Animated, StyleSheet, View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Mail, Lock, User, Sparkles } from 'lucide-react-native';
 import { Svg, Path } from 'react-native-svg';
@@ -35,17 +35,8 @@ export function LoginScreen({ onBack, onLoginSuccess, onOtpRequired, onDemoMode 
   const passwordRef = useRef<TextInput>(null);
   const usernameRef = useRef<TextInput>(null);
 
-  const containerOpacity = useRef(new Animated.Value(0)).current;
-  const containerTranslateY = useRef(new Animated.Value(24)).current;
-
-  React.useEffect(() => {
-    Animated.parallel([
-      Animated.timing(containerOpacity, { toValue: 1, duration: 420, useNativeDriver: true }),
-      Animated.timing(containerTranslateY, { toValue: 0, duration: 520, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-    ]).start();
-  }, [containerOpacity, containerTranslateY]);
-
-  const containerStyle = useMemo(() => ({ opacity: containerOpacity, transform: [{ translateY: containerTranslateY }] }), [containerOpacity, containerTranslateY]);
+  // Instant render — no mount fade (native app feel).
+  const containerStyle = useMemo(() => ({}), []);
 
   const hapticLight = () => { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); };
   const hapticMedium = () => { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}); };
@@ -370,12 +361,12 @@ export function LoginScreen({ onBack, onLoginSuccess, onOtpRequired, onDemoMode 
               </TouchableOpacity>
             </View>
 
-            {/* Demo — discreet 12px underline */}
+            {/* Guest — discreet 12px underline */}
             {onDemoMode ? (
               <View style={{ marginTop: 8, alignItems:'center' }}>
                 <TouchableOpacity onPress={() => { hapticLight(); onDemoMode(); }} activeOpacity={0.7} hitSlop={{top:8,bottom:8,left:12,right:12}}>
                   <Text style={[styles.demoModeText, { color: withAlpha(colors.muted, 0.95) }]}>
-                    <Text style={{ fontFamily: fontFamilyFor('w600'), textDecorationLine: 'underline' }}><Text>{'Explore in demo mode'}</Text></Text>
+                    <Text style={{ fontFamily: fontFamilyFor('w600'), textDecorationLine: 'underline' }}><Text>{'Continue as guest'}</Text></Text>
                   </Text>
                 </TouchableOpacity>
               </View>

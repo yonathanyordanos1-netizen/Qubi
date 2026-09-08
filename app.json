@@ -8,17 +8,18 @@
     "userInterfaceStyle": "automatic",
     "scheme": "qubi",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.qubi.app",
       "entitlements": {
-        "com.apple.developer.healthkit": true
+        "com.apple.developer.healthkit": true,
+        "com.apple.security.application-groups": ["group.com.qubi.app"]
       },
       "infoPlist": {
-        "NSCameraUsageDescription": "Qubi uses your camera to capture photo proof of completed quests.",
-        "NSPhotoLibraryUsageDescription": "Qubi uses your photo library to attach photo proof to quests.",
+        "NSCameraUsageDescription": "Qubi needs camera access so you can snap photo proof of your daily tasks and habits.",
+        "NSPhotoLibraryUsageDescription": "Qubi needs access to your photo library to select proof images for completed habits.",
         "NSMicrophoneUsageDescription": "Qubi does not record audio.",
-        "NSHealthShareUsageDescription": "Qubi reads your workouts, step count and active calories to award XP and show fitness progress.",
-        "NSHealthUpdateUsageDescription": "Qubi saves workout data to help track your fitness quests.",
+        "NSHealthShareUsageDescription": "Qubi reads your step count, workouts, and health data from Apple Health to automatically calculate dynamic XP and verify fitness tasks.",
+        "NSHealthUpdateUsageDescription": "Qubi syncs habit achievements and activity logs back to Apple Health.",
         "NSCalendarsUsageDescription": "Qubi accesses your calendar to find free time for quests and sync scheduled tasks.",
         "NSRemindersUsageDescription": "Qubi creates reminders for your quests so you never miss a scheduled task.",
         "ITSAppUsesNonExemptEncryption": false
@@ -55,7 +56,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F97316",
+          "backgroundColor": "#58CC02",
           "image": "./assets/splash-icon.png",
           "imageWidth": 256,
           "resizeMode": "cover"
@@ -73,7 +74,21 @@
       "expo-video",
       "expo-calendar",
       "expo-secure-store",
-      "expo-audio"
+      "expo-audio",
+      [
+        "expo-widgets",
+        {
+          "groupIdentifier": "group.com.qubi.app",
+          "widgets": [
+            {
+              "name": "QubiWidget",
+              "displayName": "Qubi Streak",
+              "description": "Your streak, XP level and Qubi's daily status at a glance.",
+              "supportedFamilies": ["systemSmall", "systemMedium"]
+            }
+          ]
+        }
+      ]
     ],
     "extra": {
       "eas": {

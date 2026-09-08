@@ -32,7 +32,7 @@ export interface Palette {
 }
 
 export const lightPalette: Palette = {
-  canvas: '#FFF9F3', // Qubi Glow — warm cream canvas (mascot backdrop)
+  canvas: '#FFF6E9', // Warm playful cream (Duolingo-style morning canvas)
   card: '#FFFFFF', // Cards #FFFFFF
   surfaceLowest: '#FFFFFF',
   surfaceLow: '#FFFFFF',

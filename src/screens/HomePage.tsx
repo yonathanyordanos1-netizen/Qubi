@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Pressable as RnPressable, Platform, StyleSheet, Text, View, ScrollView } from 'react-native';
-import Animated, { Easing, FadeInDown, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS, interpolateColor, useAnimatedProps } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS, interpolateColor, useAnimatedProps } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
@@ -22,7 +22,6 @@ import { useNav } from './navContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { QubiHeaderLogo } from '../components/ui/QubiHeaderLogo';
 import { QuestPath } from '../components/QuestPath';
-import { QuestCompleteOverlay } from '../components/QuestCompleteOverlay';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { SupabaseServiceInstance } from '../services/supabase';
 
@@ -97,7 +96,6 @@ export function HomePage() {
   const dailyGoalXp = Math.max(150, targetQuestCount*50);
   const progress = Math.min(1, todayXp/dailyGoalXp);
   const [pendingCount, setPendingCount] = useState(3);
-  const [celebration, setCelebration] = useState<{ name: string } | null>(null);
   const [filter, setFilter] = useState('All');
   const categories = useMemo(()=>['All', ...Array.from(new Set(habits.map(h=>h.category)))], [habits]);
   const filtered = useMemo(()=> filter==='All' ? habits : habits.filter(h=>h.category===filter), [habits, filter]);
@@ -108,26 +106,9 @@ export function HomePage() {
   const onScroll = useAnimatedScrollHandler({ onScroll:(e)=>{ scrollY.value=e.contentOffset.y; }});
   const headerOpacity = useAnimatedStyle(()=>{ const c=Math.min(1, Math.max(0, scrollY.value/80)); return { opacity:c, backgroundColor:`rgba(255,255,255,${0.38*c})` };});
 
-  // Duolingo reward loop — detect a quest flipping to verified → full-screen celebration
-  const prevStatuses = useRef<Record<string, QuestStatus>>({});
-  useEffect(() => {
-    const next: Record<string, QuestStatus> = {};
-    let newly: Habit | null = null;
-    for (const h of habits) {
-      const st = statusOf(h.id);
-      next[h.id] = st;
-      if (st === QuestStatus.verified && prevStatuses.current[h.id] != null && prevStatuses.current[h.id] !== QuestStatus.verified) {
-        newly = h;
-      }
-    }
-    const firstPass = Object.keys(prevStatuses.current).length === 0;
-    prevStatuses.current = next;
-    if (!firstPass && newly != null) {
-      setCelebration({ name: newly.name });
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [habits, completedCount, todayIndex]);
+  // Verification feedback lives in the proof sheet (ProofSuccessModal +
+  // CelebrationOverlay cinema + haptics), so the dashboard stays quiet here
+  // instead of double-celebrating the same quest.
 
   return (
     <View style={styles.flex}>
@@ -136,7 +117,7 @@ export function HomePage() {
       </Animated.View>
       <Animated.ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} bounces onScroll={onScroll} scrollEventThrottle={16}>
         {/* Top Header — QubiHeaderLogo: squircle mascot avatar, 🔥 streak badge, ⭐ total XP badge (spec §3) */}
-        <Animated.View entering={FadeInDown.duration(500)} style={{ backgroundColor: 'transparent' }}>
+        <View style={{ backgroundColor: 'transparent' }}>
           <QubiHeaderLogo
             streak={streak}
             xp={xp}
@@ -148,10 +129,10 @@ export function HomePage() {
               </RnPressable>
             }
           />
-        </Animated.View>
+        </View>
 
         {/* Daily Goal Ring — bold circular XP */}
-        <Animated.View entering={FadeInDown.duration(600).delay(80)} style={{ alignItems:'center', marginTop:12 }}>
+        <View style={{ alignItems:'center', marginTop:12 }}>
           <SquircleCard radius={32} style={{ paddingVertical:24, paddingHorizontal:16, alignItems:'center', width:'92%' }}>
             <Text style={{ fontFamily: fontFamilyFor('w800'), fontSize:13, letterSpacing:1.4, color: colors.muted }}><Text>DAILY GOAL</Text></Text>
             <View style={{ height:14 }} />
@@ -168,7 +149,7 @@ export function HomePage() {
               </View>
             </View>
           </SquircleCard>
-        </Animated.View>
+        </View>
 
         {/* Bonus Quest cards — glowing borders */}
         <View style={{ paddingHorizontal:24, marginTop:14, gap:10 }}>
@@ -229,7 +210,7 @@ export function HomePage() {
             </SquircleCard>
           ) : (
             /* Duolingo-style winding quest roadmap */
-            <Animated.View entering={FadeInDown.duration(400).delay(150)}>
+            <View>
               <QuestPath
                 habits={filtered}
                 statusOf={statusOf}
@@ -238,7 +219,7 @@ export function HomePage() {
                   nav.showProof(habit);
                 }}
               />
-            </Animated.View>
+            </View>
           )}
         </View>
 
@@ -276,15 +257,11 @@ export function HomePage() {
         </View>
         <View style={{ height:130 }} />
       </Animated.ScrollView>
-      {/* Duolingo celebration layer — confetti + XP roll-up on quest completion */}
-      {celebration ? (
-        <QuestCompleteOverlay
-          visible
-          questName={celebration.name}
-          xp={QUEST_XP}
-          onDone={() => setCelebration(null)}
-        />
-      ) : null}
+      {/*
+        No dashboard overlay here: every verification already celebrates
+        through ProofSuccessModal (+ CelebrationOverlay cinema) in the proof
+        sheet, so a second overlay would double-celebrate the same quest.
+      */}
     </View>
   );
 }

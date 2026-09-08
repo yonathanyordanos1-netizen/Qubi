@@ -9,8 +9,8 @@ import { fontFamilyFor } from '../src/theme/typography';
 // Rendered the instant the root layout mounts — BEFORE any auth state
 // evaluation, Supabase getSession() fetch, or navigation handoff.
 // • Edge-to-edge: StyleSheet.absoluteFillObject extends under status bar / notch / home indicator
-// • Canvas: Qubi Orange #F97316 with a full-bleed Qubi_2.jpg "cover" fill
-// • Headspace-style warm radial glow + Duolingo breathing pulse (reanimated spring loop, scale 1.0 → 1.04)
+// • Canvas: Duo Green #58CC02 (brand mascot green) with a full-bleed Qubi_2.jpg "cover" fill
+// • Warm radial glow + Duolingo breathing pulse (reanimated spring loop, scale 1.0 → 1.04)
 // • Holds ≥ 1.8s while supabase.auth.getSession() resolves in the parent, then a
 //   300ms cross-fade into the target screen (gated handoff: session → (tabs) · no session → intro/auth)
 //   followed by SplashScreen.hideAsync().
@@ -23,7 +23,7 @@ export interface SplashProps {
   backgroundColor?: string;
 }
 
-export function Splash({ onFinish, minimumDuration = 1800, maxWaitMs = 2500, backgroundColor = '#F97316' }: SplashProps) {
+export function Splash({ onFinish, minimumDuration = 1800, maxWaitMs = 2500, backgroundColor = '#58CC02' }: SplashProps) {
   const { width, height } = useWindowDimensions();
   const overlayOpacity = useRef(new RNAnimated.Value(1)).current;
   const finishedRef = useRef(false);
@@ -88,11 +88,11 @@ export function Splash({ onFinish, minimumDuration = 1800, maxWaitMs = 2500, bac
         resizeMode="cover"
         accessible={false}
       />
-      {/* Orange scrim so the white squircle + wordmark pop on any Qubi_2.jpg crop */}
+      {/* Green scrim so the white squircle + wordmark pop on any Qubi_2.jpg crop */}
       <View style={[StyleSheet.absoluteFill, { backgroundColor, opacity: 0.14 }]} pointerEvents="none" />
-      {/* Headspace-style warm radial glow behind the mascot — soft-focus calm */}
+      {/* Warm radial glow behind the mascot — soft-focus calm */}
       <LinearGradient
-        colors={['rgba(253,186,116,0.55)', 'rgba(249,115,22,0)']}
+        colors={['rgba(255,255,255,0.55)', 'rgba(88,204,2,0)']}
         style={styles.glow}
         pointerEvents="none"
       />
@@ -111,7 +111,7 @@ export function Splash({ onFinish, minimumDuration = 1800, maxWaitMs = 2500, bac
           </View>
         </Animated.View>
 
-        {/* Typography: Qubi bold white rounded geometric 34/900/-0.5 */}
+        {/* Typography: Qubi bold white rounded geometric 34/900/-0.5 + tagline */}
         <Text
           style={{
             color: '#FFFFFF',
@@ -124,6 +124,21 @@ export function Splash({ onFinish, minimumDuration = 1800, maxWaitMs = 2500, bac
         >
           <Text>{'Qubi'}</Text>
         </Text>
+        <View style={{ height: 8 }} />
+        <View style={{ backgroundColor: 'rgba(255,255,255,0.22)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999 }}>
+          <Text
+            style={{
+              color: '#FFFFFF',
+              fontSize: 13,
+              fontWeight: '700',
+              letterSpacing: 0.4,
+              textAlign: 'center',
+              fontFamily: fontFamilyFor('w700'),
+            }}
+          >
+            <Text>{'Tiny habits, daily wins'}</Text>
+          </Text>
+        </View>
       </View>
     </RNAnimated.View>
   );
@@ -151,8 +166,8 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
-    shadowColor: '#7C2D12',
-    shadowOpacity: 0.22,
+    shadowColor: '#1F5C00',
+    shadowOpacity: 0.25,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,

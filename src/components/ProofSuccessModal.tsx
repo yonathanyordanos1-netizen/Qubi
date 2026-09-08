@@ -6,6 +6,8 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
+  withRepeat,
+  withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
@@ -16,8 +18,9 @@ import { fontFamilyFor } from '../theme/typography';
 import { Pressable } from './Pressable';
 import { StrokeIcon } from './AppIcons';
 import { QubiMascot } from './QubiMascot';
+import { XpTicker } from './animations/XpTicker';
 import { useSettingsStore } from '../state/settingsStore';
-import { playQuestComplete, playPop, playClick } from '../services/soundService';
+import { playPop, playClick, playTaskCompleted } from '../services/soundService';
 import {
   rankLabel,
   tierDataForXp,
@@ -44,23 +47,10 @@ export interface ProofSuccessInfo {
   /** Lifetime verified-quest counts around this completion (drives rank tags). */
   completionsBefore: number;
   completionsAfter: number;
-}
-
-/** Rapidly counts 0 → target with an ease-out curve (XP roll-up). */
-function useCountUp(target: number, durationMs = 950): number {
-  const [v, setV] = useState(0);
-  useEffect(() => {
-    let raf = 0;
-    const t0 = Date.now();
-    const tick = () => {
-      const p = Math.min(1, (Date.now() - t0) / durationMs);
-      setV(Math.round(target * (1 - Math.pow(1 - p, 3))));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, durationMs]);
-  return v;
+  /** AI-graded effort band (drives the difficulty pill). */
+  difficulty?: string;
+  /** AI celebration / coaching line shown under the XP badge. */
+  qubiComment?: string;
 }
 
 /**
@@ -83,14 +73,12 @@ export function ProofSuccessModal({
 }) {
   const hapticsOn = useSettingsStore((s) => s.haptics);
 
-  // Success chime the moment the modal opens + celebratory haptic.
+  // Task-completed sting the moment the modal opens + celebratory haptic.
   useEffect(() => {
-    playQuestComplete();
+    playTaskCompleted();
     if (hapticsOn) void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const shownXp = useCountUp(info.xpGained);
 
   // ── Tier progress bar fill: animates from before → after XP ──
   const dataAfter = tierDataForXp(Math.max(info.xpAfter, 1), info.completionsAfter);
@@ -205,8 +193,28 @@ export function ProofSuccessModal({
               {info.habitName}
             </Text>
 
-            {/* Bold high-contrast XP badge */}
-            <Text style={styles.xpBadge}>+{shownXp} XP</Text>
+            {/* Bold high-contrast XP badge — shared spring-driven ticker */}
+            <XpTicker
+              oldXp={0}
+              newXp={Math.max(0, info.xpGained)}
+              showDeltaOnly
+              prefix="+"
+              suffix=" XP"
+              delayMs={300}
+              textStyle={styles.xpBadge}
+            />
+
+            {info.difficulty != null ? (
+              <View style={styles.difficultyWrap}>
+                <Text style={styles.difficultyText}>{`${info.difficulty.toUpperCase()} EFFORT`}</Text>
+              </View>
+            ) : null}
+
+            {info.qubiComment != null && info.qubiComment.length > 0 ? (
+              <Text numberOfLines={3} style={styles.qubiComment}>
+                {info.qubiComment}
+              </Text>
+            ) : null}
 
             {/* Tier progress bar */}
             <View style={styles.progressBlock}>
@@ -397,6 +405,31 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 4 },
   },
 
+  /* Difficulty pill + AI comment */
+  difficultyWrap: {
+    alignSelf: 'center',
+    backgroundColor: '#1C1917',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    marginTop: 8,
+  },
+  difficultyText: {
+    color: '#FFC531',
+    fontFamily: fontFamilyFor('w800'),
+    fontSize: 11,
+    letterSpacing: 1.1,
+  },
+  qubiComment: {
+    textAlign: 'center',
+    color: AppColors.ink,
+    fontFamily: fontFamilyFor('w600'),
+    fontSize: 13.5,
+    lineHeight: 18,
+    marginTop: 8,
+    paddingHorizontal: 8,
+  },
+
   /* Tier progress */
   progressBlock: { marginTop: 16 },
   progressTrack: {
@@ -445,7 +478,7 @@ const styles = StyleSheet.create({
   /* 3D tactile CONTINUE */
   ctaWrap: { marginTop: 18 },
   ctaShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: XP_ORANGE_DEEP,
     borderRadius: 999,
   },
@@ -469,7 +502,7 @@ const styles = StyleSheet.create({
   /* Secondary pill — outline + depth */
   secondaryWrap: { marginTop: 12 },
   secondaryShadow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: '#CBD5E1',
     borderRadius: 999,
   },

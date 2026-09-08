@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { ChatMessage, Habit, LeagueEntry, QuestStatus, habitToJson, habitFromJson } from '../types/models';
 import { SupabaseServiceInstance } from '../services/supabase';
+import { rankLabel, tierForXp } from '../services/rankService';
 import { fetchLatestUpdate, UpdateInfo } from '../services/updateService';
 import { applyHabitReminders, cancelAllNotifications } from '../services/notificationService';
 
@@ -145,6 +146,8 @@ export interface AppShape {
 
   // ── Actions ──────────────────────────────────────────────────────────────
   hydrateFromSupabase: () => Promise<void>;
+  /** Re-reads xp/streak/level from the live Supabase profile row. */
+  refreshProfileStats: () => Promise<void>;
   setProfile: (opts: { name: string; username: string }) => Promise<string | null>;
   applyGoogleAuth: (opts: { name: string; email: string }) => void;
   createAccount: (opts: {
@@ -171,7 +174,13 @@ export interface AppShape {
   removeHabit: (habitId: string) => Promise<void>;
   /** Applies a generated routine; resolves with the number of quests added. */
   applyAiPlan: (plan: PlannedHabit[]) => Promise<number>;
-  verifyHabit: (habitId: string, proofPath?: string) => Promise<void>;
+  verifyHabit: (
+    habitId: string,
+    proofPath?: string,
+    xpAmount?: number,
+    difficulty?: string,
+    taskName?: string,
+  ) => Promise<void>;
   addUserMessage: (text: string) => void;
   clearChats: () => void;
   addAssistantMessage: (text: string, toolName?: string) => void;
@@ -401,8 +410,8 @@ export const useAppStore = create<
     responses: {},
     memberSince: null,
 
-    xp: 1250,
-    streak: 14,
+    xp: 0,
+    streak: 0,
     lastStreakDate: null,
 
     activeTab: 0,
@@ -512,12 +521,34 @@ export const useAppStore = create<
         }
         patch.chat = chat;
         set(patch);
+        pushStatsToWidget(get());
         scheduleHabitReminders(get());
         // Presence + push token registration for signed-in users.
         void SupabaseServiceInstance.touchPresence();
         void import('../services/notificationService').then((m) => m.registerPushToken()).catch(() => {});
       } catch {
         // Offline or transient — local state stays authoritative.
+      }
+    },
+
+    async refreshProfileStats() {
+      if (!SupabaseServiceInstance.isSignedIn) return;
+      try {
+        const profile = await SupabaseServiceInstance.fetchProfile();
+        if (profile == null) return;
+        const patch: Partial<AppShape> = {};
+        const xp = profile['xp'];
+        const streak = profile['streak'];
+        if (typeof xp === 'number' && Number.isFinite(xp)) patch.xp = Math.max(0, Math.floor(xp));
+        if (typeof streak === 'number' && Number.isFinite(streak)) patch.streak = Math.max(0, Math.floor(streak));
+        const last = profile['last_streak_date'];
+        if (typeof last === 'string') patch.lastStreakDate = last;
+        if (Object.keys(patch).length > 0) {
+          set(patch);
+          pushStatsToWidget(get());
+        }
+      } catch {
+        // Offline — optimistic local stats remain authoritative.
       }
     },
 
@@ -626,8 +657,8 @@ export const useAppStore = create<
         password: '',
         onboardingDone: false,
         accountCreated: false,
-        xp: 1250,
-        streak: 14,
+        xp: 0,
+        streak: 0,
         lastStreakDate: null,
         memberSince: null,
         responses: {},
@@ -702,7 +733,7 @@ export const useAppStore = create<
       return plan.length;
     },
 
-    async verifyHabit(habitId, proofPath) {
+    async verifyHabit(habitId, proofPath, xpAmount = 50, difficulty = 'Medium', taskName?: string) {
       const s = get();
       const matrix = s.weekMatrix[habitId];
       if (matrix == null) return;
@@ -714,13 +745,24 @@ export const useAppStore = create<
       if (proofPath != null) {
         proofs[habitId] = { ...(proofs[habitId] ?? {}), [today]: proofPath };
       }
+      const gain = Math.max(0, Math.min(120, Math.round(xpAmount)));
       set({
         weekMatrix: { ...s.weekMatrix, [habitId]: nextRow },
         proofs,
-        xp: s.xp + 50,
+        xp: s.xp + gain,
         ...bumpStreakValue(s.streak, s.lastStreakDate),
       });
-      await syncVerification(habitId, proofPath, get().xp, get().streak);
+      await syncVerification(habitId, proofPath, get().xp, get().streak, {
+        xpAmount: gain,
+        difficulty,
+        taskName,
+      });
+      // Re-read authoritative stats (Supabase RPC is the source of truth),
+      // then mirror them to the Home Screen widget.
+      try {
+        await get().refreshProfileStats();
+      } catch {}
+      pushStatsToWidget(get());
     },
 
     addUserMessage(text) {
@@ -796,6 +838,7 @@ async function syncVerification(
   proofPath: string | undefined,
   xp: number,
   streak: number,
+  reward?: { xpAmount: number; difficulty: string; taskName?: string },
 ): Promise<void> {
   try {
     const svc = SupabaseServiceInstance;
@@ -806,7 +849,18 @@ async function syncVerification(
       status: 'pending',
     });
     if (completionId != null) {
-      await svc.verifyCompletion(completionId, proofPath);
+      await svc.verifyCompletion(completionId, proofPath, reward?.xpAmount ?? 50);
+    }
+    // Persist the graded proof to the history ledger (difficulty + XP).
+    if (reward != null) {
+      const habit = useAppStore.getState().customHabits.find((h) => h.id === habitId);
+      await svc.insertActivityProof({
+        habitId,
+        taskName: reward.taskName ?? habit?.name ?? habitId,
+        difficulty: reward.difficulty,
+        xpAwarded: reward.xpAmount,
+        photoUrl: proofPath,
+      });
     }
     // Push aggregate stats so the profile + leaderboard stay in sync.
     await svc.upsertProfile({
@@ -814,6 +868,29 @@ async function syncVerification(
       streak,
       last_streak_date: new Date().toISOString().substring(0, 10),
     });
+  } catch {}
+}
+
+/** Mirrors live xp/streak/level + Mon–Fri verification to the Home Screen widget. */
+function pushStatsToWidget(s: AppShape): void {
+  try {
+    const today = todayIndexNow();
+    const dayDone = (d: number): boolean =>
+      Object.values(s.weekMatrix).some((days) => days[d] === QuestStatus.verified);
+    const week = [0, 1, 2, 3, 4].map(dayDone);
+    void import('../services/widgetSyncService')
+      .then((m) =>
+        m
+          .syncStatsToWidget({
+            xp: s.xp,
+            streak: s.streak,
+            level: 1 + Math.floor(s.xp / 500),
+            week,
+            todayDone: dayDone(today),
+          })
+          .catch(() => {}),
+      )
+      .catch(() => {});
   } catch {}
 }
 
@@ -995,7 +1072,9 @@ export function selectMemberSinceLabel(s: AppShape): string {
   return `Member since ${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
-export const selectLeague = memoByState((s: AppShape): LeagueEntry[] => [
+export const selectLeague = memoByState((s: AppShape): LeagueEntry[] => {
+  const myCompletions = selectCompletedCount(s);
+  return [
     { rank: 1, name: 'Zara Khan', initials: 'ZK', xp: 2780, streak: 31, tier: 'Silver', isMe: false, level: 18 },
     { rank: 2, name: 'Liam Novak', initials: 'LN', xp: 2590, streak: 22, tier: 'Silver', isMe: false, level: 16 },
     {
@@ -1004,15 +1083,16 @@ export const selectLeague = memoByState((s: AppShape): LeagueEntry[] => [
       initials: selectInitials(s),
       xp: s.xp,
       streak: s.streak,
-      tier: 'Silver',
+      tier: rankLabel(tierForXp(s.xp, myCompletions)),
       isMe: true,
-      level: 12,
+      level: 1 + Math.floor(s.xp / 500),
     },
     { rank: 4, name: 'Sofia Reyes', initials: 'SR', xp: 2140, streak: 12, tier: 'Silver', isMe: false, level: 11 },
     { rank: 5, name: 'Marcus Bell', initials: 'MB', xp: 1890, streak: 9, tier: 'Silver', isMe: false, level: 10 },
     { rank: 6, name: 'Priya Shah', initials: 'PS', xp: 1675, streak: 6, tier: 'Silver', isMe: false, level: 9 },
     { rank: 7, name: 'Diego Torres', initials: 'DT', xp: 1490, streak: 4, tier: 'Silver', isMe: false, level: 8 },
-]);
+  ];
+});
 
 /** Full JSON-serializable map of onboarding responses (for Inspector mode). */
 export function selectOnboardingDataJson(s: AppShape): Record<string, unknown> {
