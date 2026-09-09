@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.qubi.app",
-      "buildNumber": "15",
+      "buildNumber": "16",
       "entitlements": {
         "com.apple.developer.healthkit": true,
         "com.apple.security.application-groups": ["group.com.qubi.app"]

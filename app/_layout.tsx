@@ -4,7 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Linking from 'expo-linking';
 import { ThemeProvider } from '../src/theme/ThemeProvider';
 import { useSettingsStore } from '../src/state/settingsStore';
-import { supabase, SupabaseServiceInstance } from '../src/services/supabase';
+import { supabase, SupabaseServiceInstance, socialOAuthInFlight } from '../src/services/supabase';
 import { Splash } from './splash';
 import type { Session } from '@supabase/supabase-js';
 
@@ -150,6 +150,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     const handleUrl = async (event: { url: string }) => {
       if (supabase == null) return;
       if (event.url.includes('access_token') || event.url.includes('code')) {
+        // Social OAuth (Google/Apple) owns its own code exchange in
+        // signInWithSocial — skip here so the code isn't consumed twice.
+        if (socialOAuthInFlight) return;
         try {
           await supabase.auth.exchangeCodeForSession(event.url);
         } catch (e) {

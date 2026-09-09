@@ -88,9 +88,7 @@ export function QubiHeaderLogo({ streak, xp, right, onAvatarPress }: QubiHeaderL
         {
           paddingTop: insets.top + 8,
           // Duolingo sticky-header rule: opaque surface + crisp 2px bottom border
-          backgroundColor: isDark ? AppColors.canvasDark : '#FFFFFF',
-          borderBottomWidth: 2,
-          borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0',
+          backgroundColor: isDark ? AppColors.canvasDark : '#FFF7ED',
         },
       ]}
     >
@@ -108,7 +106,7 @@ export function QubiHeaderLogo({ streak, xp, right, onAvatarPress }: QubiHeaderL
         <View style={styles.spacer} />
 
         {/* Streak badge — 🔥 with flicker animation */}
-        <View style={[styles.badge, { backgroundColor: '#FFFFFF' }]}>
+        <View style={styles.badge}>
           <Animated.View style={flameStyle}>
             <Text style={styles.flame}><Text>{'🔥'}</Text></Text>
           </Animated.View>
@@ -122,7 +120,7 @@ export function QubiHeaderLogo({ streak, xp, right, onAvatarPress }: QubiHeaderL
         <View style={{ width: 8 }} />
 
         {/* Total XP badge — ⭐ indicator */}
-        <View style={[styles.badge, { backgroundColor: withAlpha(AppColors.gold, 0.12), borderWidth: 1, borderColor: withAlpha(AppColors.gold, 0.3) }]}>
+        <View style={[styles.badge, styles.badgeGold]}>
           <Text style={styles.xpStar}><Text>{'⭐'}</Text></Text>
           <Animated.View style={xpStyle}>
             <Text style={[styles.badgeText, { color: AppColors.streakAmberDeep }]}>
@@ -163,14 +161,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    borderColor: '#E2E8F0',
+    borderColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    shadowColor: AppColors.cardShadow,
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: '#000',
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    shadowOffset: { width: 2, height: 2 },
     elevation: 3,
   },
   avatarImage: {
@@ -197,14 +195,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderWidth: 2,
+    borderColor: '#000000',
+    backgroundColor: '#FFFFFF',
     gap: 3,
-    shadowColor: AppColors.cardShadow,
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#000',
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    shadowOffset: { width: 2, height: 2 },
     elevation: 2,
+  },
+  badgeGold: {
+    backgroundColor: withAlpha(AppColors.gold, 0.16),
   },
   flame: { fontSize: 14 },
   xpStar: { fontSize: 12 },

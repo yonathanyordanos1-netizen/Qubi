@@ -1,6 +1,8 @@
 /**
  * Profile tab — avatar hero, stat pills, weekly XP chart, badges,
  * account status, about rows and edit-profile / sign-out actions.
+ * Restyled to the Duolingo-style Qubi theme: cream canvas, chunky white
+ * cards with 2px ink borders + hard offset shadows, orange accents.
  * Port of lib/pages/profile_page.dart.
  */
 
@@ -16,15 +18,14 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CrossModal } from '../components/CrossModal';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { AppColors, withAlpha } from '../theme/colors';
-import { AppSpacing } from '../theme/spacing';
 import { fontFamilyFor } from '../theme/typography';
 import { useTheme } from '../theme/ThemeProvider';
-import { LiquidGlassCard } from '../components/LiquidGlass';
 import { Pressable } from '../components/Pressable';
 import { GoogleLogo, StrokeIcon } from '../components/AppIcons';
 import { WorkoutStatsCard } from '../components/WorkoutStatsCard';
@@ -64,6 +65,7 @@ function fmt(n: number): string {
 export function ProfilePage() {
   const { isDark, colors } = useTheme();
   const nav = useNav();
+  const insets = useSafeAreaInsets();
 
   const displayName = useAppStore((s) => s.displayName);
   const username = useAppStore((s) => s.username);
@@ -107,8 +109,8 @@ export function ProfilePage() {
 
   return (
     <ScrollView
-      style={styles.flex}
-      contentContainerStyle={styles.scrollContent}
+      style={[styles.flex, { backgroundColor: isDark ? colors.canvas : '#FFF7ED' }]}
+      contentContainerStyle={{ paddingBottom: 150, paddingTop: insets.top + 8 }}
       showsVerticalScrollIndicator={false}
       bounces
     >
@@ -117,166 +119,156 @@ export function ProfilePage() {
         <Text style={[styles.headerTitle, { color: colors.ink }]}>Profile</Text>
         <View style={styles.flex1} />
         <Pressable scale={0.94} onTap={nav.openSettings}>
-          <View
-            style={[
-              styles.settingsBtn,
-              {
-                backgroundColor: isDark ? colors.glassBacking : colors.card,
-                borderColor: colors.glassEdge,
-              },
-            ]}
-          >
-            <StrokeIcon name="settings" size={20} color={colors.muted} strokeWidth={2} />
+          <View style={styles.settingsBtn}>
+            <StrokeIcon name="settings" size={20} color={AppColors.ink} strokeWidth={2} />
           </View>
         </Pressable>
       </View>
 
       {/* ── Hero ── */}
-      <LiquidGlassCard padding={20}>
-        <View style={{ alignItems: 'center' }}>
-          <View>
-            <LinearGradient colors={palette} style={styles.avatarTile}>
-              <Text style={styles.avatarInitials}>{initials}</Text>
-            </LinearGradient>
-            <View
-              style={[
-                styles.verifiedDot,
-                { borderColor: isDark ? colors.glassBacking : '#FFFFFF' },
-              ]}
-            >
-              <StrokeIcon name="check" size={12} color="#FFFFFF" strokeWidth={3} />
+      <View style={styles.padX}>
+        <View style={styles.heroCard}>
+          <View style={{ alignItems: 'center' }}>
+            <View>
+              <LinearGradient colors={palette} style={styles.avatarTile}>
+                <Text style={styles.avatarInitials}>{initials}</Text>
+              </LinearGradient>
+              <View style={styles.verifiedDot}>
+                <StrokeIcon name="check" size={12} color="#FFFFFF" strokeWidth={3} />
+              </View>
             </View>
-          </View>
-          <View style={{ height: 14 }} />
-          <Text style={[styles.nameText, { color: colors.ink }]}>{displayName}</Text>
-          <View style={{ height: 4 }} />
-          <Text style={[styles.handleText, { color: colors.muted }]}>@{username}</Text>
-          {email.length > 0 && (
-            <>
-              <View style={{ height: 2 }} />
-              <Text style={{ fontSize: 12.5, color: colors.muted }}>{email}</Text>
-            </>
-          )}
-          <View style={{ height: 12 }} />
-          <View style={styles.row}>
-            <MetaChip color={AppColors.gold} text={memberSince} />
-            <View style={{ width: 8 }} />
-            <MetaChip color={AppColors.primaryFixedDim} text="🥈 Silver" />
-          </View>
-          {age != null ? (
-            <>
-              <View style={{ height: 6 }} />
-              <MetaChip color={colors.muted} text={`${age} yrs`} />
-            </>
-          ) : null}
-          <View style={{ height: 10 }} />
-          {/* Rank badge */}
-          <View style={[styles.rankPill, { borderColor: tierCol }]}>
-            <Text style={{ fontSize: 15 }}>{rankEmoji(tier)}</Text>
-            <View style={{ width: 6 }} />
-            <Text style={[styles.rankPillText, { color: tierCol }]}>{rankLabel(tier)}</Text>
-          </View>
-          <View style={{ height: 16 }} />
-          {/* Total XP block */}
-          <View style={[styles.xpBlock, { backgroundColor: colors.surfaceLow }]}>
+            <View style={{ height: 14 }} />
+            <Text style={[styles.nameText, { color: colors.ink }]}>{displayName}</Text>
+            <View style={{ height: 4 }} />
+            <Text style={[styles.handleText, { color: colors.muted }]}>@{username}</Text>
+            {email.length > 0 && (
+              <>
+                <View style={{ height: 2 }} />
+                <Text style={{ fontSize: 12.5, color: colors.muted }}>{email}</Text>
+              </>
+            )}
+            <View style={{ height: 12 }} />
             <View style={styles.row}>
-              <Text style={styles.xpBlockLabel}>TOTAL XP</Text>
-              <View style={styles.flex1} />
-              <Text style={[styles.xpBlockValue, { color: colors.ink }]}>
-                {xp} / {level * 500}
+              <MetaChip color={AppColors.gold} text={memberSince} dark={isDark} />
+              <View style={{ width: 8 }} />
+              <MetaChip color={AppColors.sky} text="🥈 Silver" dark={isDark} />
+            </View>
+            {age != null ? (
+              <>
+                <View style={{ height: 6 }} />
+                <MetaChip color={colors.muted} text={`${age} yrs`} dark={isDark} />
+              </>
+            ) : null}
+            <View style={{ height: 10 }} />
+            {/* Rank badge */}
+            <View style={[styles.rankPill, { borderColor: tierCol }]}>
+              <Text style={{ fontSize: 15 }}>{rankEmoji(tier)}</Text>
+              <View style={{ width: 6 }} />
+              <Text style={[styles.rankPillText, { color: tierCol }]}>{rankLabel(tier)}</Text>
+            </View>
+            <View style={{ height: 16 }} />
+            {/* Total XP block */}
+            <View style={[styles.xpBlock, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#FFF7ED' }]}>
+              <View style={styles.row}>
+                <Text style={styles.xpBlockLabel}>TOTAL XP</Text>
+                <View style={styles.flex1} />
+                <Text style={[styles.xpBlockValue, { color: colors.ink }]}>
+                  {xp} / {level * 500}
+                </Text>
+              </View>
+              <View style={{ height: 8 }} />
+              <View style={styles.levelTrack}>
+                <View
+                  style={{
+                    width: `${Math.round(Math.min(1, Math.max(0, intoLevel / 500)) * 100)}%`,
+                    height: 8,
+                    backgroundColor: AppColors.primary,
+                    borderRadius: 8,
+                  }}
+                />
+              </View>
+              <View style={{ height: 6 }} />
+              <Text style={[styles.toNextLevel, { color: colors.muted }]}>
+                {toNextLevel} XP to Level {level + 1}
               </Text>
             </View>
-            <View style={{ height: 8 }} />
-            <View style={styles.levelTrack}>
-              <View
-                style={{
-                  width: `${Math.round(Math.min(1, Math.max(0, intoLevel / 500)) * 100)}%`,
-                  height: 8,
-                  backgroundColor: AppColors.primary,
-                }}
-              />
+            <View style={{ height: 14 }} />
+            <View style={PRIMARY_GLOW}>
+              <Pressable scale={0.98} onTap={() => setEditOpen(true)}>
+                <LinearGradient colors={[AppColors.primary, AppColors.primaryDeep]} style={styles.editButton}>
+                  <StrokeIcon name="edit" size={16} color="#FFFFFF" strokeWidth={2} />
+                  <View style={{ width: 6 }} />
+                  <Text style={styles.editButtonText}>Edit Profile</Text>
+                </LinearGradient>
+              </Pressable>
             </View>
-            <View style={{ height: 6 }} />
-            <Text style={[styles.toNextLevel, { color: colors.muted }]}>
-              {toNextLevel} XP to Level {level + 1}
-            </Text>
-          </View>
-          <View style={{ height: 12 }} />
-          <View style={PRIMARY_GLOW}>
-            <Pressable scale={0.98} onTap={() => setEditOpen(true)}>
-              <LinearGradient colors={[AppColors.primary, AppColors.primaryDeep]} style={styles.editButton}>
-                <StrokeIcon name="edit" size={16} color="#FFFFFF" strokeWidth={2} />
-                <View style={{ width: 6 }} />
-                <Text style={styles.editButtonText}>Edit Profile</Text>
-              </LinearGradient>
-            </Pressable>
           </View>
         </View>
-      </LiquidGlassCard>
+      </View>
 
       {/* ── Workout Activity (HealthKit) ── */}
-      <View style={{ paddingTop: 14 }}>
+      <View style={{ paddingTop: 14, paddingHorizontal: 16 }}>
         <WorkoutStatsCard />
       </View>
 
-      {/* ── Stat pills — 2x2 grid of clean white cards ── */}
+      {/* ── Stat pills — 2x2 grid of chunky cards ── */}
       <View style={styles.statGrid2x2}>
         <View style={styles.statGridRow}>
-          <View style={{ flex: 1 }}><StatPill icon="flame" value={`${streak}`} label="Day Streak" accent={AppColors.primary} /></View>
+          <View style={{ flex: 1 }}><StatPill icon="flame" value={`${streak}`} label="Day Streak" accent={AppColors.primary} dark={isDark} /></View>
           <View style={{ width: 10 }} />
-          <View style={{ flex: 1 }}><StatPill icon="zap" value={fmt(xp)} label="Total XP" accent={AppColors.sky} /></View>
+          <View style={{ flex: 1 }}><StatPill icon="zap" value={fmt(xp)} label="Total XP" accent={AppColors.sky} dark={isDark} /></View>
         </View>
         <View style={{ height: 10 }} />
         <View style={styles.statGridRow}>
-          <View style={{ flex: 1 }}><StatPill icon="check" value={`${weeklyRate}%`} label="Verify Rate" accent={AppColors.success} /></View>
+          <View style={{ flex: 1 }}><StatPill icon="check" value={`${weeklyRate}%`} label="Verify Rate" accent={AppColors.success} dark={isDark} /></View>
           <View style={{ width: 10 }} />
-          <View style={{ flex: 1 }}><StatPill icon="trophy" value={`Lv ${level}`} label="Level" accent="#F59E0B" /></View>
+          <View style={{ flex: 1 }}><StatPill icon="trophy" value={`Lv ${level}`} label="Level" accent="#F59E0B" dark={isDark} /></View>
         </View>
       </View>
 
       {/* ── Quest setup (from onboarding) ── */}
       {focusAreas.length > 0 || dailyPace != null || baselineRank != null ? (
         <View style={styles.sectionSpacing}>
-          <LiquidGlassCard padding={16}>
+          <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#000000' }]}>
             <Text style={[styles.cardTitle, { color: colors.ink }]}>Your Quest Profile</Text>
             <View style={{ height: 12 }} />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {baselineRank != null ? (
-                <MetaChip color="#F59E0B" text={`Baseline · ${baselineRank}`} />
+                <MetaChip color="#F59E0B" text={`Baseline · ${baselineRank}`} dark={isDark} />
               ) : null}
               {dailyPace != null ? (
-                <MetaChip color="#378ADD" text={`Pace · ${dailyPace} (${targetQuestCount}/day)`} />
+                <MetaChip color="#378ADD" text={`Pace · ${dailyPace} (${targetQuestCount}/day)`} dark={isDark} />
               ) : null}
               {focusAreas.map((f) => (
-                <MetaChip key={f} color={AppColors.primaryFixedDim} text={f} />
+                <MetaChip key={f} color={AppColors.sky} text={f} dark={isDark} />
               ))}
             </View>
-          </LiquidGlassCard>
+          </View>
         </View>
       ) : null}
 
       {/* ── Weekly XP ── */}
       <View style={styles.sectionSpacing}>
-        <LiquidGlassCard padding={16}>
+        <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#000000' }]}>
           <View style={styles.row}>
             <Text style={[styles.cardTitle, { color: colors.ink }]}>Weekly XP</Text>
             <View style={styles.flex1} />
-            <View style={[styles.verifiedPill, { backgroundColor: withAlpha(AppColors.success, 0.1) }]}>
+            <View style={styles.verifiedPill}>
               <Text style={styles.verifiedPillText}>{completedCount} verified</Text>
             </View>
           </View>
           <View style={{ height: 18 }} />
           <BarChartWidget values={weeklyBars} labels={WEEK_LABELS} activeIndex={todayIndex} height={180} />
-        </LiquidGlassCard>
+        </View>
       </View>
 
       {/* ── Badges ── */}
       <View style={styles.sectionSpacing}>
-        <LiquidGlassCard padding={18}>
+        <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#000000' }]}>
           <View style={styles.row}>
             <Text style={[styles.cardTitle, { color: colors.ink }]}>Badges</Text>
             <View style={styles.flex1} />
-            <Text style={[[styles.badgeCountText, { color: colors.muted }]]}>
+            <Text style={[styles.badgeCountText, { color: colors.muted }]}>
               {earnedBadges}/{badges.length} earned
             </Text>
           </View>
@@ -289,11 +281,11 @@ export function ProfilePage() {
                   styles.badgeChip,
                   {
                     backgroundColor: badge.earned
-                      ? withAlpha(AppColors.primary, 0.08)
+                      ? withAlpha(AppColors.primary, 0.1)
                       : isDark
-                        ? colors.surfaceContainer
-                        : colors.surfaceLow,
-                    borderColor: badge.earned ? withAlpha(AppColors.primary, 0.3) : colors.border,
+                        ? 'rgba(255,255,255,0.06)'
+                        : '#FFF7ED',
+                    borderColor: badge.earned ? AppColors.primary : isDark ? colors.glassEdge : '#00000022',
                   },
                 ]}
               >
@@ -310,19 +302,19 @@ export function ProfilePage() {
               </View>
             ))}
           </View>
-        </LiquidGlassCard>
+        </View>
       </View>
 
       {/* ── Account card ── */}
       <View style={styles.sectionSpacing}>
-        <LiquidGlassCard padding={16}>
+        <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#000000' }]}>
           <View style={styles.row}>
             <View
               style={[
                 styles.providerTile,
                 {
-                  backgroundColor: isSignedIn ? '#FFFFFF' : colors.surfaceContainer,
-                  borderColor: colors.glassEdge,
+                  backgroundColor: isSignedIn ? withAlpha(AppColors.success, 0.1) : isDark ? 'rgba(255,255,255,0.06)' : '#FFF7ED',
+                  borderColor: isDark ? colors.glassEdge : '#00000022',
                 },
               ]}
             >
@@ -345,41 +337,30 @@ export function ProfilePage() {
             <View style={{ width: 8 }} />
             <View style={[styles.statusDot, { backgroundColor: accent, shadowColor: accent }]} />
           </View>
-        </LiquidGlassCard>
+        </View>
       </View>
 
       {/* ── About card ── */}
-      <LiquidGlassCard padding={16}>
-        <AboutRow icon="info" label="App Version" value="1.0.0" ink={colors.ink} muted={colors.muted} />
-        <RnPressable onPress={() => { useAppStore.getState().resetOnboardingForReplay(); nav.toast('Onboarding replay armed'); }}>
-          <AboutRow
-            icon="replay"
-            label="Replay Onboarding"
-            value="Walk through the 17-step wizard again"
-            ink={colors.ink}
-            muted={colors.muted}
-          />
-        </RnPressable>
-        <View style={{ height: 4 }} />
-        <Pressable scale={0.98} onTap={confirmSignOut}>
-          <View
-            style={{
-              width: '100%',
-              height: 46,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: AppSpacing.radiusSm,
-              backgroundColor: withAlpha(AppColors.error, 0.08),
-              borderWidth: 1,
-              borderColor: withAlpha(AppColors.error, 0.5),
-            }}
-          >
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </View>
-        </Pressable>
-      </LiquidGlassCard>
-
-      <View style={{ height: 130 }} />
+      <View style={styles.sectionSpacing}>
+        <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#000000' }]}>
+          <AboutRow icon="info" label="App Version" value="1.2.0" ink={colors.ink} muted={colors.muted} />
+          <RnPressable onPress={() => { useAppStore.getState().resetOnboardingForReplay(); nav.toast('Onboarding replay armed'); }}>
+            <AboutRow
+              icon="replay"
+              label="Replay Onboarding"
+              value="Walk through the guide again"
+              ink={colors.ink}
+              muted={colors.muted}
+            />
+          </RnPressable>
+          <View style={{ height: 4 }} />
+          <Pressable scale={0.98} onTap={confirmSignOut}>
+            <View style={styles.signOutBtn}>
+              <Text style={styles.signOutText}>Sign Out</Text>
+            </View>
+          </Pressable>
+        </View>
+      </View>
 
       <EditProfileSheet visible={editOpen} onClose={() => setEditOpen(false)} initialName={displayName} initialUsername={username} />
     </ScrollView>
@@ -424,19 +405,19 @@ export function ProfilePage() {
 
 // ── Small pieces ────────────────────────────────────────────────────────────
 
-function MetaChip({ color, text }: { color: string; text: string }) {
+function MetaChip({ color, text, dark }: { color: string; text: string; dark: boolean }) {
   return (
     <View
       style={{
         paddingHorizontal: 12,
         paddingVertical: 6,
-        borderRadius: AppSpacing.radiusPill,
-        backgroundColor: withAlpha(color, 0.1),
-        borderWidth: 1,
-        borderColor: withAlpha(color, 0.3),
+        borderRadius: 999,
+        backgroundColor: withAlpha(color, dark ? 0.16 : 0.1),
+        borderWidth: 2,
+        borderColor: dark ? 'transparent' : '#00000022',
       }}
     >
-      <Text style={{ fontSize: 11.5, fontWeight: '800', fontFamily: fontFamilyFor('w800'), color }}>
+      <Text style={{ fontSize: 11.5, fontFamily: fontFamilyFor('w800'), color }}>
         {text}
       </Text>
     </View>
@@ -448,15 +429,17 @@ function StatPill({
   value,
   label,
   accent,
+  dark,
 }: {
   icon: string;
   value: string;
   label: string;
   accent: string;
+  dark: boolean;
 }) {
   return (
-    <View style={[styles.statPill, { backgroundColor: AppColors.cardWhite, borderColor: AppColors.cardBorder }]}>
-      <View style={[styles.statPillIcon, { backgroundColor: withAlpha(accent, 0.08) }]}>
+    <View style={[styles.statPill, { backgroundColor: dark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: dark ? 'rgba(255,255,255,0.1)' : '#000000' }]}>
+      <View style={[styles.statPillIcon, { backgroundColor: withAlpha(accent, 0.12), borderColor: withAlpha(accent, 0.3) }]}>
         <StrokeIcon name={icon} size={14} color={accent} strokeWidth={1.8} />
       </View>
       <View style={{ height: 8 }} />
@@ -510,7 +493,7 @@ function EditProfileSheet({
   initialName: string;
   initialUsername: string;
 }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const nav = useNav();
   const [name, setName] = useState(initialName);
   const [username, setUsername] = useState(initialUsername);
@@ -548,7 +531,7 @@ function EditProfileSheet({
             style={[
               styles.sheet,
               {
-                backgroundColor: colors.glassBacking,
+                backgroundColor: isDark ? 'rgba(30,24,20,0.98)' : '#FFFFFF',
                 borderColor: '#000000',
                 borderWidth: 2.5,
                 borderRadius: 24,
@@ -562,9 +545,9 @@ function EditProfileSheet({
           >
             <Text style={[styles.sheetTitle, { color: colors.ink, textAlign: 'center', alignSelf: 'stretch' }]}>Edit Profile</Text>
             <View style={{ height: 16 }} />
-            <SheetField icon="user" hint="Full Name" value={name} onChange={setName} />
+            <SheetField icon="user" hint="Full Name" value={name} onChange={setName} dark={isDark} />
             <View style={{ height: 12 }} />
-            <SheetField icon="sparkle" hint="Username" value={username} onChange={setUsername} autoCapitalize="none" />
+            <SheetField icon="sparkle" hint="Username" value={username} onChange={setUsername} autoCapitalize="none" dark={isDark} />
             <View style={{ height: 6 }} />
             <Text style={[styles.sheetHint, { color: colors.muted }]}>
               3–16 chars · letters, numbers, _ — usernames are unique to you.
@@ -589,12 +572,14 @@ function SheetField({
   value,
   onChange,
   autoCapitalize,
+  dark,
 }: {
   icon: string;
   hint: string;
   value: string;
   onChange: (t: string) => void;
   autoCapitalize?: 'none' | 'sentences' | 'words';
+  dark: boolean;
 }) {
   const { colors } = useTheme();
   return (
@@ -602,10 +587,10 @@ function SheetField({
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.surfaceContainer,
-        borderRadius: AppSpacing.radiusSoft,
-        borderWidth: 1,
-        borderColor: colors.glassEdge,
+        backgroundColor: dark ? 'rgba(255,255,255,0.06)' : '#FFF7ED',
+        borderRadius: 14,
+        borderWidth: 2,
+        borderColor: dark ? colors.glassEdge : '#00000022',
         paddingHorizontal: 12,
       }}
     >
@@ -629,7 +614,7 @@ const PRIMARY_GLOW = {
   shadowOpacity: 0.3,
   shadowRadius: 14,
   elevation: 8,
-  borderRadius: AppSpacing.radiusPill,
+  borderRadius: 999,
   alignSelf: 'stretch',
 } as const;
 
@@ -637,36 +622,50 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   flex1: { flex: 1 },
   row: { flexDirection: 'row', alignItems: 'center' },
-  scrollContent: { paddingBottom: 0 },
+  padX: { paddingHorizontal: 16 },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 6,
+    paddingBottom: 12,
   },
-  headerTitle: { fontSize: 24, fontWeight: '800', fontFamily: fontFamilyFor('w800'), letterSpacing: -0.5 },
+  headerTitle: { fontSize: 24, fontFamily: fontFamilyFor('w900'), letterSpacing: -0.5 },
   settingsBtn: {
     width: 42,
     height: 42,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#000000',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    ...{
-      shadowColor: '#0F172A',
-      shadowOpacity: 0.05,
-      shadowRadius: 20,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 3,
-    },
+    shadowColor: '#000',
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    shadowOffset: { width: 2, height: 2 },
+    elevation: 3,
   },
 
+  heroCard: {
+    borderRadius: 24,
+    borderWidth: 2.5,
+    borderColor: '#000000',
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    shadowColor: '#000',
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    shadowOffset: { width: 4, height: 4 },
+    elevation: 5,
+  },
   avatarTile: {
     width: 88,
     height: 88,
     borderRadius: 24,
+    borderWidth: 2.5,
+    borderColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
     shadowOpacity: 0.35,
@@ -674,7 +673,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
   },
-  avatarInitials: { color: '#FFFFFF', fontSize: 28, fontWeight: '800', fontFamily: fontFamilyFor('w800') },
+  avatarInitials: { color: '#FFFFFF', fontSize: 28, fontFamily: fontFamilyFor('w800') },
   verifiedDot: {
     position: 'absolute',
     right: 0,
@@ -684,11 +683,12 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     backgroundColor: AppColors.success,
     borderWidth: 2.5,
+    borderColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  nameText: { fontSize: 22, fontWeight: '800', fontFamily: fontFamilyFor('w800'), letterSpacing: -0.5 },
-  handleText: { fontSize: 13.5, fontWeight: '600', fontFamily: fontFamilyFor('w600') },
+  nameText: { fontSize: 22, fontFamily: fontFamilyFor('w900'), letterSpacing: -0.5 },
+  handleText: { fontSize: 13.5, fontFamily: fontFamilyFor('w600') },
 
   rankPill: {
     alignSelf: 'center',
@@ -697,35 +697,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 999,
-    borderWidth: 1.5,
+    borderWidth: 2,
     backgroundColor: 'transparent',
   },
-  rankPillText: { fontSize: 12.5, fontWeight: '800', fontFamily: fontFamilyFor('w800') },
+  rankPillText: { fontSize: 12.5, fontFamily: fontFamilyFor('w800') },
 
   xpBlock: {
     alignSelf: 'stretch',
     paddingHorizontal: 14,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#00000018',
   },
-  xpBlockLabel: { fontSize: 9, fontWeight: '700', fontFamily: fontFamilyFor('w700'), letterSpacing: 0.8, color: 'rgba(148,163,184,0.9)' },
-  xpBlockValue: { fontSize: 12, fontWeight: '800', fontFamily: fontFamilyFor('w800') },
+  xpBlockLabel: { fontSize: 9, fontFamily: fontFamilyFor('w700'), letterSpacing: 0.8, color: 'rgba(148,163,184,0.9)' },
+  xpBlockValue: { fontSize: 12, fontFamily: fontFamilyFor('w800') },
   levelTrack: {
-    height: 8,
+    height: 10,
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: 'rgba(148,163,184,0.18)',
+    backgroundColor: 'rgba(148,163,184,0.25)',
   },
-  toNextLevel: { fontSize: 11, fontWeight: '600', fontFamily: fontFamilyFor('w600') },
+  toNextLevel: { fontSize: 11, fontFamily: fontFamilyFor('w600') },
 
   editButton: {
-    height: 48,
-    borderRadius: AppSpacing.radiusPill,
+    height: 50,
+    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
   },
-  editButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', fontFamily: fontFamilyFor('w800') },
+  editButtonText: { color: '#FFFFFF', fontSize: 14, fontFamily: fontFamilyFor('w800') },
 
   statGrid2x2: {
     paddingHorizontal: 16,
@@ -733,65 +737,74 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   statGridRow: { flexDirection: 'row' },
-  statGrid: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-    gap: 10,
-  },
   statPill: {
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 18,
+    borderWidth: 2.5,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 10,
     paddingVertical: 16,
-    shadowColor: AppColors.cardShadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
   },
   statPillIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 9,
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statPillValue: { fontSize: 16, lineHeight: 20, fontWeight: '800', fontFamily: fontFamilyFor('w800'), letterSpacing: -0.4 },
-  statPillLabel: { fontSize: 11, lineHeight: 14, fontWeight: '600', fontFamily: fontFamilyFor('w600') },
+  statPillValue: { fontSize: 16, lineHeight: 20, fontFamily: fontFamilyFor('w800'), letterSpacing: -0.4 },
+  statPillLabel: { fontSize: 11, lineHeight: 14, fontFamily: fontFamilyFor('w600') },
 
-  sectionSpacing: { paddingHorizontal: 16, marginBottom: 10, marginTop: 2 },
-  cardTitle: { fontSize: 15, fontWeight: '700', fontFamily: fontFamilyFor('w700') },
-  verifiedPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  verifiedPillText: { fontSize: 12, fontWeight: '700', fontFamily: fontFamilyFor('w700'), color: AppColors.success },
-  badgeCountText: { fontSize: 12, fontWeight: '600', fontFamily: fontFamilyFor('w600') },
+  sectionSpacing: { paddingHorizontal: 16, marginBottom: 12, marginTop: 2 },
+  plainCard: {
+    borderRadius: 20,
+    borderWidth: 2.5,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  cardTitle: { fontSize: 15, fontFamily: fontFamilyFor('w800') },
+  verifiedPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: withAlpha(AppColors.success, 0.12),
+  },
+  verifiedPillText: { fontSize: 12, fontFamily: fontFamilyFor('w700'), color: AppColors.success },
+  badgeCountText: { fontSize: 12, fontFamily: fontFamilyFor('w600') },
 
   badgeChip: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: AppSpacing.radiusPill,
-    borderWidth: 1,
+    borderRadius: 999,
+    borderWidth: 2,
     marginRight: 8,
     marginBottom: 8,
     alignSelf: 'flex-start',
   },
-  badgeChipText: { fontSize: 11, fontWeight: '700', fontFamily: fontFamilyFor('w700') },
+  badgeChipText: { fontSize: 11, fontFamily: fontFamilyFor('w700') },
 
   providerTile: {
     width: 46,
     height: 46,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  accountTitle: { fontSize: 14.5, fontWeight: '800', fontFamily: fontFamilyFor('w800') },
-  accountSubtitle: { fontSize: 12, fontWeight: '600', fontFamily: fontFamilyFor('w600') },
+  accountTitle: { fontSize: 14.5, fontFamily: fontFamilyFor('w800') },
+  accountSubtitle: { fontSize: 12, fontFamily: fontFamilyFor('w600') },
   statusDot: {
     width: 10,
     height: 10,
@@ -802,27 +815,41 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
-  aboutLabel: { fontSize: 13.5, fontWeight: '600', fontFamily: fontFamilyFor('w600') },
-  aboutValue: { fontSize: 13.5, fontWeight: '700', fontFamily: fontFamilyFor('w700') },
-  signOutText: { fontSize: 14, fontWeight: '700', fontFamily: fontFamilyFor('w700'), color: AppColors.error },
+  aboutLabel: { fontSize: 13.5, fontFamily: fontFamilyFor('w600') },
+  aboutValue: { fontSize: 13.5, fontFamily: fontFamilyFor('w700') },
+  signOutBtn: {
+    width: '100%',
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    backgroundColor: withAlpha(AppColors.error, 0.08),
+    borderWidth: 2,
+    borderColor: withAlpha(AppColors.error, 0.5),
+  },
+  signOutText: { fontSize: 14, fontFamily: fontFamilyFor('w700'), color: AppColors.error },
 
   sheet: {
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 20,
-    borderTopLeftRadius: AppSpacing.radiusSheet,
-    borderTopRightRadius: AppSpacing.radiusSheet,
-    borderWidth: 1,
     maxHeight: '86%',
   },
-  sheetTitle: { fontSize: 19, fontWeight: '800', fontFamily: fontFamilyFor('w800') },
-  sheetInput: { flex: 1, fontSize: 15, fontWeight: '700', fontFamily: fontFamilyFor('w700'), paddingVertical: 14 },
-  sheetHint: { fontSize: 11, fontWeight: '600', fontFamily: fontFamilyFor('w600') },
+  sheetTitle: { fontSize: 19, fontFamily: fontFamilyFor('w800') },
+  sheetInput: { flex: 1, fontSize: 15, fontFamily: fontFamilyFor('w700'), paddingVertical: 14 },
+  sheetHint: { fontSize: 11, fontFamily: fontFamilyFor('w600') },
   saveButton: {
     height: 54,
-    borderRadius: AppSpacing.radiusPill,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
-  saveButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800', fontFamily: fontFamilyFor('w800') },
+  saveButtonText: { color: '#FFFFFF', fontSize: 15, fontFamily: fontFamilyFor('w800') },
 });

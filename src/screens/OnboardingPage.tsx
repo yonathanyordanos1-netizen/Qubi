@@ -40,22 +40,6 @@ interface ChoiceOption {
   emoji?: string;
 }
 
-function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const id = setTimeout(() => reject(new Error('timeout')), ms);
-    p.then(
-      (v) => {
-        clearTimeout(id);
-        resolve(v);
-      },
-      (e) => {
-        clearTimeout(id);
-        reject(e);
-      },
-    );
-  });
-}
-
 export function OnboardingPage({ replayMode = false }: { replayMode?: boolean }) {
   const { isDark } = useTheme();
   const ink = isDark ? AppColors.inkLight : AppColors.ink;
@@ -112,6 +96,10 @@ export function OnboardingPage({ replayMode = false }: { replayMode?: boolean })
     if (s.includes('cancelled') || s.includes('CANCELED')) {
       return 'Sign-in was cancelled. Try again or use email instead.';
     }
+    if (s.includes('not enabled')) {
+      // pass through the actionable Supabase provider message verbatim
+      return s;
+    }
     if (s.includes('network') || s.includes('timeout') || s.includes('Socket')) {
       return 'No internet connection. Check your network and try again.';
     }
@@ -129,7 +117,7 @@ export function OnboardingPage({ replayMode = false }: { replayMode?: boolean })
     setAuthBusy(true);
     setAuthError(null);
     try {
-      const res = await withTimeout(SupabaseServiceInstance.signInWithGoogle(), 5000);
+      const res = await SupabaseServiceInstance.signInWithGoogle();
       const returning = await afterAuthSuccess(res);
       if (returning) return; // Previous device — boot gate routes to dashboard.
       setAuthMode('google');

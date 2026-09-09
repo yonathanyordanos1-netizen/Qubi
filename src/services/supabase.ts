@@ -58,6 +58,15 @@ export const supabase: SupabaseClient | null = AppConfig.supabaseConfigured
     })
   : null;
 
+/**
+ * True while `signInWithSocial` is actively exchanging an OAuth code from the
+ * in-app browser session. The global deep-link handlers (App.tsx / _layout.tsx)
+ * must SKIP their own exchangeCodeForSession while this is set — otherwise the
+ * same code is consumed twice and the Google/Apple sign-in races into an
+ * "invalid code" failure.
+ */
+export let socialOAuthInFlight = false;
+
 export type AuthErrorType =
   | 'alreadyRegistered'
   | 'rateLimited'
@@ -270,32 +279,94 @@ class SupabaseService {
   }
 
   /**
-   * Social OAuth via the system browser (works in Expo Go).
+   * Social OAuth via the system browser (works in Expo Go and standalone IPAs).
    * Uses Supabase's hosted OAuth page + PKCE code exchange on return.
+   *
+   * IMPORTANT: The provider (google/apple) MUST be enabled in the Supabase
+   * dashboard (Auth → Providers) for launch to succeed. If it isn't, we surface
+   * a clear, actionable message instead of the generic "did not launch".
    */
+  private async ensureProviderEnabled(provider: 'google' | 'apple'): Promise<boolean> {
+    try {
+      const res = await fetch(`${AppConfig.supabaseUrl}/auth/v1/settings`, {
+        headers: {
+          apikey: AppConfig.supabaseAnonKey,
+          Authorization: `Bearer ${AppConfig.supabaseAnonKey}`,
+        },
+      });
+      if (res.status !== 200) return true; // cannot verify — let the flow try
+      const settings = (await res.json()) as { external?: Record<string, boolean> };
+      const enabled = settings.external?.[provider];
+      if (enabled == null) return true;
+      return enabled;
+    } catch {
+      return true; // offline / unreachable — don't pre-emptively block
+    }
+  }
+
   async signInWithSocial(
     provider: 'google' | 'apple',
   ): Promise<{ session: Session | null; user: User | null }> {
+    const configured = await this.ensureProviderEnabled(provider);
+    if (!configured) {
+      const label = provider === 'google' ? 'Google' : 'Apple';
+      throw new Error(
+        `${label} sign-in is not enabled yet. Ask the app owner to turn on ${label} in Supabase (Auth → Providers → ${label}) — it's free.`,
+      );
+    }
+
     const redirectTo = Linking.createURL('/auth/callback');
     const { data, error } = await this.client.auth.signInWithOAuth({
       provider,
       options: { redirectTo, skipBrowserRedirect: true },
     });
-    if (error != null || !data.url) throw new Error(`${provider} sign-in did not launch.`);
-
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type !== 'success' || !result.url) {
-      throw new Error(`${provider} sign-in was cancelled.`);
+    if (error != null) {
+      const lower = (error.message ?? '').toLowerCase();
+      if (lower.includes('provider is not enabled') || lower.includes('not enabled')) {
+        const label = provider === 'google' ? 'Google' : 'Apple';
+        throw new Error(
+          `${label} sign-in is not enabled yet. Ask the app owner to turn on ${label} in Supabase (Auth → Providers → ${label}) — it's free.`,
+        );
+      }
+      throw new Error(`${provider} sign-in did not launch: ${error.message}`);
+    }
+    if (data.url == null || data.url.length === 0) {
+      throw new Error(`${provider} sign-in did not launch.`);
     }
 
-    const parsed = Linking.parse(result.url);
-    const qp = (parsed.queryParams ?? {}) as Record<string, string | undefined>;
-    if (qp.error) throw new Error(qp.error_description || `${provider} sign-in failed.`);
-    if (!qp.code) throw new Error(`${provider} sign-in did not return an auth code.`);
+    socialOAuthInFlight = true;
+    try {
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (result.type !== 'success') {
+        if (result.type === 'cancel') {
+          throw new Error(`${provider} sign-in was cancelled.`);
+        }
+        throw new Error(`${provider} sign-in was dismissed — please try again.`);
+      }
+      const returnedUrl = result.url;
+      if (returnedUrl == null || returnedUrl.length === 0) {
+        throw new Error(`${provider} sign-in did not return a callback URL.`);
+      }
 
-    const { error: exErr } = await this.client.auth.exchangeCodeForSession(qp.code);
-    if (exErr != null) throw new Error(exErr.message);
-    return { session: this.session, user: this.currentUser };
+      const parsed = Linking.parse(returnedUrl);
+      const qp = (parsed.queryParams ?? {}) as Record<string, string | undefined>;
+      if (qp.error) throw new Error(qp.error_description || `${provider} sign-in failed.`);
+      if (!qp.code) throw new Error(`${provider} sign-in did not return an auth code.`);
+
+      // Guard: the global deep-link handler in _layout.tsx may also try to exchange
+      // this code. Only exchange here (this screen owns the result) — see note there.
+      const { error: exErr } = await this.client.auth.exchangeCodeForSession(qp.code);
+      if (exErr != null) {
+        throw new Error(
+          (exErr.message ?? '').toLowerCase().includes('invalid')
+            ? `${provider} sign-in could not be verified (the code was already used) — try again.`
+            : exErr.message,
+        );
+      }
+      return { session: this.session, user: this.currentUser };
+    } finally {
+      socialOAuthInFlight = false;
+    }
   }
 
   /** Kept for backwards compatibility with existing callers. */

@@ -6,6 +6,7 @@
   "exclude": [
     "node_modules",
     "supabase/functions",
+    "qubi-landing",
     // Dead legacy screen (unrouted, pre-SDK 57 APIs). Excluded until removed.
     "src/screens/SnapProofScreen.tsx"
   ]

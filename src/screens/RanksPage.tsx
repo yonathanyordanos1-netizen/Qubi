@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
@@ -44,6 +45,7 @@ function fmt(n: number): string {
 
 export function RanksPage() {
   const { isDark, colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<'leaderboard' | 'rank'>('leaderboard');
 
   const userXp = useAppStore((s) => s.xp);
@@ -75,15 +77,11 @@ export function RanksPage() {
     setTab(t);
   };
 
-  const segmentedBg = isDark ? '#1E1814' : '#FDF1E7';
-  const segmentedBorder = isDark ? 'rgba(255,255,255,0.08)' : '#F5E9DA';
-  const segmentActiveBg = isDark ? '#2E241C' : '#FFFFFF';
-
   return (
-    <View style={styles.flex}>
-      {/* ── Top nav: Leaderboard | Rank — pinned above the safe content ── */}
-      <View style={styles.topNav}>
-        <View style={[styles.segmented, { backgroundColor: segmentedBg, borderColor: segmentedBorder }]}>
+    <View style={[styles.flex, { backgroundColor: isDark ? colors.canvas : '#FFF7ED' }]}>
+      {/* ── Top nav: Leaderboard | Rank — chunky orange segmented control ── */}
+      <View style={[styles.topNav, { paddingTop: insets.top + 10 }]}>
+        <View style={styles.segmented}>
           {(['leaderboard', 'rank'] as const).map((t) => {
             const selected = tab === t;
             return (
@@ -94,19 +92,9 @@ export function RanksPage() {
                 accessibilityRole="tab"
                 accessibilityState={{ selected }}
                 accessibilityLabel={t === 'leaderboard' ? 'Leaderboard' : 'Rank'}
-                style={[
-                  styles.segment,
-                  selected && {
-                    backgroundColor: segmentActiveBg,
-                    shadowColor: '#0F172A',
-                    shadowOpacity: isDark ? 0.18 : 0.08,
-                    shadowRadius: 12,
-                    shadowOffset: { width: 0, height: 3 },
-                    elevation: 3,
-                  },
-                ]}
+                style={[styles.segment, selected && styles.segmentActive]}
               >
-                <Text style={[styles.segmentText, { color: selected ? colors.ink : colors.muted }]}>
+                <Text style={[styles.segmentText, { color: selected ? '#FFFFFF' : colors.muted }]}>
                   {t === 'leaderboard' ? 'Leaderboard' : 'Rank'}
                 </Text>
               </TouchableOpacity>
@@ -128,9 +116,9 @@ export function RanksPage() {
           style={[
             styles.rankCard,
             {
-              backgroundColor: isDark ? colors.glassBacking : colors.card,
-              borderColor: withAlpha(tierColor, 0.25),
-              shadowColor: tierColor,
+              backgroundColor: isDark ? colors.glassBacking : '#FFFFFF',
+              borderColor: isDark ? withAlpha(tierColor, 0.35) : '#000000',
+              shadowColor: isDark ? tierColor : '#000000',
             },
           ]}
         >
@@ -326,27 +314,47 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   flex1: { flex: 1 },
   row: { flexDirection: 'row', alignItems: 'center' },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 130 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 150 },
 
-  topNav: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 },
-  segmented: { flexDirection: 'row', padding: 4, borderRadius: 999, borderWidth: 1, gap: 4, height: 44 },
+  topNav: { paddingHorizontal: 16, paddingBottom: 12 },
+  segmented: {
+    flexDirection: 'row',
+    padding: 3,
+    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: '#000000',
+    backgroundColor: '#FFFFFF',
+    gap: 4,
+    height: 46,
+    shadowColor: '#000',
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    shadowOffset: { width: 2, height: 2 },
+    elevation: 3,
+  },
   segment: { flex: 1, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  segmentText: { fontSize: 13, fontFamily: fontFamilyFor('w700'), lineHeight: 16, letterSpacing: 0.1 },
+  segmentActive: { backgroundColor: AppColors.primary },
+  segmentText: { fontSize: 13, fontFamily: fontFamilyFor('w800'), lineHeight: 16, letterSpacing: 0.1 },
 
   rankCard: {
-    borderRadius: 24,
-    borderWidth: 1.5,
+    borderRadius: 22,
+    borderWidth: 2.5,
+    borderColor: '#000000',
+    backgroundColor: '#FFFFFF',
     padding: 16,
     marginBottom: 16,
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    shadowOffset: { width: 4, height: 4 },
+    elevation: 5,
   },
   tierBadge: {
     width: 56,
     height: 56,
     borderRadius: 18,
+    borderWidth: 2,
+    borderColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
     shadowOpacity: 0.3,
@@ -379,7 +387,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 12,
-    borderRadius: 16,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: '#00000018',
     marginBottom: 8,
   },
   tierRowLabel: { fontSize: 14, fontWeight: '700', fontFamily: fontFamilyFor('w700') },
@@ -393,9 +403,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 12,
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 18,
+    borderWidth: 2,
     marginBottom: 8,
+    shadowColor: '#000',
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    shadowOffset: { width: 2, height: 2 },
+    elevation: 2,
   },
   rankBox: { width: 26, alignItems: 'center' },
   rankNum: { fontSize: 14, fontWeight: '800', fontFamily: fontFamilyFor('w800'), textAlign: 'center' },

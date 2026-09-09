@@ -10,17 +10,19 @@ import { AppColors, withAlpha } from '../../theme/colors';
 import { fontFamilyFor } from '../../theme/typography';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useGateStore } from '../../state/gateStore';
-import { ProgressBar } from '../../components/ui/ProgressBar';
 import { QubiMascot } from '../../components/QubiMascot';
 import { playStepClick } from '../../services/soundService';
 
 /**
- * DuolingoGuide — 3-step onboarding carousel (Neubrutalism edition).
+ * DuolingoGuide — 4-step onboarding carousel (Neubrutalism edition).
  * Routing: "Get Started"/"Skip" persist the hasCompletedOnboarding flag
- * (gateStore → AsyncStorage) then transition to Sign Up; slide-3 link goes
+ * (gateStore → AsyncStorage) then transition to Sign Up; slide-4 link goes
  * to Log In. Cards: 2.5px black borders, hard 4×4 offset shadows, r20.
- * Skip shows on steps 1–2 only. Layout scales off window W/H so cards fit
- * comfortably from iPhone SE to Pro Max without overflow. Hermes-safe.
+ * Skip shows on steps 1–3 only.
+ *
+ * Slide 4 is the "Add the Widget" how-to: a full Duolingo-style widget mock
+ * (orange card, bold "N Days", Mo–Fr ✓ chain, mascot) above three numbered
+ * steps that mirror exactly how you pin a widget on iOS/Android.
  */
 
 const { width: W, height: H } = Dimensions.get('window');
@@ -32,7 +34,7 @@ const SLIDES = [
   { title: 'Build Daily Habits', desc: 'Lock in streaks and crush your daily goal — Qubi keeps you accountable every single day.' },
   { title: 'Earn XP & Level Up', desc: 'Every verified quest earns 10–120 XP based on effort. Level up and unlock avatar rewards.' },
   { title: 'Compete with Friends', desc: 'Climb the leaderboard, take on friend challenges and win weekly leagues.' },
-  { title: 'Add the Streak Widget', desc: 'Pin your streak to the Home Screen so you never lose it. Takes 10 seconds.' },
+  { title: 'Add the Streak Widget', desc: 'Pin Qubi to your Home Screen like Duolingo does — your streak, always one glance away.' },
 ] as const;
 
 /** expo-router navigation when available; no-op in the classic-entry build */
@@ -112,7 +114,7 @@ export function DuolingoGuide({ onGetStarted, onSkip, onLogin, onDone }: { onGet
 
   return (
     <View style={[styles.flex, { backgroundColor: canvas }]}>
-      {/* Top bar: chunky Neubrutalist progress segments + Skip (steps 1–2 only) */}
+      {/* Top bar: chunky Neubrutalist progress segments + Skip (steps 1–3 only) */}
       <View style={[styles.topBar, { paddingTop: insets.top + 12, paddingHorizontal: 24 }]}>
         <View style={styles.progressRow}>
           {SLIDES.map((_, i) => (
@@ -134,7 +136,7 @@ export function DuolingoGuide({ onGetStarted, onSkip, onLogin, onDone }: { onGet
         )}
       </View>
 
-      {/* 3-slide carousel — Neubrutalist card per slide */}
+      {/* 4-slide carousel — Neubrutalist card per slide */}
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -236,7 +238,9 @@ function StreakRows() {
         <View style={styles.goalChip}><Text style={styles.goalChipText}><Text>{'Daily Goal'}</Text></Text></View>
       </View>
       <View style={{ height: 14 }} />
-      <ProgressBar progress={0.72} showStar={false} height={14} />
+      <View style={styles.barTrack}>
+        <View style={[styles.barFill, { width: '72%' }]} />
+      </View>
     </View>
   );
 }
@@ -258,32 +262,40 @@ function XpRows() {
   );
 }
 
-/** Slide 4 — Duolingo-style "add the widget" how-to */
+/** Slide 4 hero — a faithful mini replica of the real Qubi home-screen widget */
 function WidgetPreview() {
   return (
     <View style={styles.widgetMock}>
-      <View style={styles.widgetMockHead}>
-        <Text style={{ fontSize: 15 }}><Text>{'🔥'}</Text></Text>
-        <Text style={styles.widgetMockStreak}><Text>{'12'}</Text></Text>
+      {/* Left column: flame + big days + status + dot chain (like the real widget) */}
+      <View style={{ flex: 1 }}>
+        <View style={styles.widgetMockHead}>
+          <Text style={{ fontSize: 16 }}><Text>{'🔥'}</Text></Text>
+          <Text style={styles.widgetMockStreak}><Text>{'12 Days'}</Text></Text>
+        </View>
+        <Text style={styles.widgetMockSub}><Text>{"You're on fire!"}</Text></Text>
+        <View style={styles.widgetMockDots}>
+          {['M', 'T', 'W', 'T', 'F'].map((d, idx) => (
+            <View key={`${d}-${idx}`} style={styles.widgetMockDotCol}>
+              <Text style={styles.widgetMockDay}><Text>{d}</Text></Text>
+              <View style={[styles.widgetMockDot, idx < 3 && styles.widgetMockDotDone]}>
+                {idx < 3 ? <Text style={styles.widgetMockCheck}><Text>{'✓'}</Text></Text> : null}
+              </View>
+            </View>
+          ))}
+        </View>
       </View>
-      <View style={styles.widgetMockDots}>
-        {['M', 'T', 'W', 'T', 'F'].map((d, idx) => (
-          <View key={`${d}-${idx}`} style={[styles.widgetMockDot, idx < 3 && styles.widgetMockDotDone]}>
-            <Text style={styles.widgetMockDotText}><Text>{d}</Text></Text>
-          </View>
-        ))}
-      </View>
-      <Text style={styles.widgetMockSub}><Text>{'Qubi Streak'}</Text></Text>
+      {/* Right: mascot */}
+      <Text style={styles.widgetMockMascot}><Text>{'🦖'}</Text></Text>
     </View>
   );
 }
 
-/** Slide 4 stat rows — 3 steps to pin the widget */
+/** Slide 4 stat rows — exactly how to pin the widget on your phone */
 function WidgetSteps() {
   const steps = [
     { n: '1', text: 'Long-press your Home Screen' },
-    { n: '2', text: 'Tap + and pick Qubi Streak' },
-    { n: '3', text: 'Never lose your streak 🔥' },
+    { n: '2', text: 'Tap +  and search “Qubi”' },
+    { n: '3', text: 'Pick a size → Add Widget 🔥' },
   ];
   return (
     <View style={styles.statCard}>
@@ -414,26 +426,36 @@ const styles = StyleSheet.create({
   },
   goalChip: { backgroundColor: withAlpha('#58CC02', 0.16), paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 2, borderColor: '#000' },
   goalChipText: { fontSize: 11, fontFamily: fontFamilyFor('w800'), color: '#3A7D00' },
+  barTrack: {
+    width: '100%', height: 16, borderRadius: 8, backgroundColor: '#FFFFFF',
+    borderWidth: 2, borderColor: '#000', overflow: 'hidden',
+  },
+  barFill: { height: '100%', backgroundColor: '#F97316', borderRadius: 6 },
   rewardRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: withAlpha(AppColors.sky, 0.12), paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 2, borderColor: '#000' },
   rewardText: { fontSize: 11, fontFamily: fontFamilyFor('w700'), color: AppColors.skyDeep },
   leaderRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
   leaderDivider: { borderBottomWidth: 1.5, borderBottomColor: '#00000022' },
   leaderName: { fontSize: 14, fontFamily: fontFamilyFor('w700'), color: '#000' },
   leaderXp: { fontSize: 12, fontFamily: fontFamilyFor('w800'), color: '#3A7D00' },
+  /* Slide 4 widget mock — mirrors widgets/QubiWidget.tsx */
   widgetMock: {
+    flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#F97316', borderRadius: 16, borderWidth: 2, borderColor: '#000',
-    paddingHorizontal: 16, paddingVertical: 10, alignItems: 'center',
+    paddingHorizontal: 14, paddingVertical: 10, alignSelf: 'stretch',
   },
   widgetMockHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  widgetMockStreak: { fontSize: 22, fontFamily: fontFamilyFor('w900'), color: '#FFFFFF' },
-  widgetMockDots: { flexDirection: 'row', gap: 5, marginTop: 6 },
+  widgetMockStreak: { fontSize: 21, fontFamily: fontFamilyFor('w900'), color: '#FFFFFF', letterSpacing: -0.5 },
+  widgetMockSub: { fontSize: 10, fontFamily: fontFamilyFor('w600'), color: 'rgba(255,255,255,0.9)', marginTop: 2 },
+  widgetMockDots: { flexDirection: 'row', gap: 6, marginTop: 8 },
+  widgetMockDotCol: { alignItems: 'center', gap: 2 },
+  widgetMockDay: { fontSize: 8, fontFamily: fontFamilyFor('w700'), color: 'rgba(255,255,255,0.85)' },
   widgetMockDot: {
-    width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.35)',
+    width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.35)',
     alignItems: 'center', justifyContent: 'center',
   },
   widgetMockDotDone: { backgroundColor: '#FFFFFF' },
-  widgetMockDotText: { fontSize: 9, fontFamily: fontFamilyFor('w800'), color: '#F97316' },
-  widgetMockSub: { fontSize: 10, fontFamily: fontFamilyFor('w700'), color: '#FFFFFF', marginTop: 6 },
+  widgetMockCheck: { fontSize: 10, fontFamily: fontFamilyFor('w800'), color: '#F97316' },
+  widgetMockMascot: { fontSize: 44, marginLeft: 8 },
   widgetStepRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7 },
   widgetStepDivider: { borderBottomWidth: 1.5, borderBottomColor: '#00000022' },
   widgetStepNum: {

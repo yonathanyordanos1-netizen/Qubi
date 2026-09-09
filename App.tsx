@@ -19,7 +19,7 @@ import { useSettingsStore } from './src/state/settingsStore';
 import { useGateStore } from './src/state/gateStore';
 import { DuolingoGuide } from './src/screens/onboarding/DuolingoGuide';
 import { SixStepWizard } from './src/screens/onboarding/SixStepWizard';
-import { SupabaseServiceInstance } from './src/services/supabase';
+import { SupabaseServiceInstance, socialOAuthInFlight } from './src/services/supabase';
 import { NavContext, type UiNav } from './src/screens/navContext';
 import { HomePage } from './src/screens/HomePage';
 import { TasksPage } from './src/screens/TasksPage';
@@ -185,6 +185,9 @@ function Root() {
   useEffect(() => {
     const handleDeepLink = async (event: { url: string }) => {
       if (event.url.includes('access_token') || event.url.includes('code')) {
+        // Social OAuth (Google/Apple) owns its own code exchange in
+        // signInWithSocial — skip here so the code isn't consumed twice.
+        if (socialOAuthInFlight) return;
         try {
           const { supabase } = await import('./src/services/supabase');
           await supabase?.auth.exchangeCodeForSession(event.url);
