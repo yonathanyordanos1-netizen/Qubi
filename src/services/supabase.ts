@@ -126,6 +126,16 @@ const log = (...args: unknown[]) => {
   if (__DEV__) console.log('[auth]', ...args);
 };
 
+/** Result of a profile identity write (server-enforced uniqueness + cooldowns). */
+export interface ProfileIdentityResult {
+  ok: boolean;
+  error?: string;
+  /** Which field hit its cooldown, if any (name → weekly, username → monthly). */
+  cooldown?: 'name' | 'username';
+  /** ISO timestamp when that cooldown lifts (present when cooldown is set). */
+  nextChange?: string;
+}
+
 class SupabaseService {
   /** The underlying client. Throws if Supabase is not configured (demo mode). */
   get client(): SupabaseClient {
@@ -493,6 +503,46 @@ class SupabaseService {
     if (!this.isConfigured || this.userId == null) return { ok: true }; // demo mode
     const { error } = await this.client.from('profiles').update(values).eq('id', this.userId);
     return error != null ? { ok: false, error: error.message } : { ok: true };
+  }
+
+  /**
+   * Profile identity update — the ONLY path to a name/username edit. Calls the
+   * `update_profile_identity` RPC which validates + enforces uniqueness and the
+   * rate limits server-side (name once/week, username once/month), so clients
+   * can't silently bypass them. Returns a friendly error when a field is on
+   * cooldown or taken. No-op (ok) in demo mode.
+   */
+  async updateProfileIdentity(opts: {
+    name: string;
+    username: string;
+    avatar?: string;
+  }): Promise<ProfileIdentityResult> {
+    if (!this.isConfigured || this.userId == null) return { ok: true }; // demo mode
+    try {
+      const { data, error } = await this.client.rpc('update_profile_identity', {
+        p_name: opts.name.trim(),
+        p_username: opts.username.trim().toLowerCase(),
+        p_avatar: opts.avatar ?? '',
+      });
+      if (error != null) return { ok: false, error: error.message };
+      const row = Array.isArray(data) ? (data[0] as Record<string, unknown> | undefined) : (data as Record<string, unknown> | null);
+      if (row == null || row['ok'] === false) {
+        const err = (
+          row != null && typeof row['error'] === 'string'
+            ? row['error']
+            : 'Could not save your profile — try again.'
+        ) as string;
+        let cooldown: 'name' | 'username' | undefined;
+        if (row != null && (row['cooldown'] === 'name' || row['cooldown'] === 'username')) {
+          cooldown = row['cooldown'] as 'name' | 'username';
+        }
+        const next = row != null && typeof row['next_change'] === 'string' ? (row['next_change'] as string) : undefined;
+        return { ok: false, error: err, cooldown, nextChange: next };
+      }
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : 'Could not save your profile.' };
+    }
   }
 
   /**

@@ -154,16 +154,16 @@ function SixStepWizardInner({ onOtpRequired }: { onOtpRequired?: (email: string)
     }
   };
 
-  const inputBg = isDark ? colors.card : '#FFFFFF';
-  const inputBorder = isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0';
-  const focusedBorder = withAlpha(AppColors.primary, 0.38);
+  const inputBg = isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF';
+  const inputBorder = isDark ? 'rgba(255,255,255,0.10)' : '#F5E6D2';
+  const focusedBorder = withAlpha(AppColors.primary, 0.45);
 
   const usernameClean = username.replace(/^@/, '').toLowerCase();
   const isUsernameValid = /^[a-z0-9_]{3,16}$/.test(usernameClean);
   const usernameBorder = username.length === 0 ? (focused === 'username' ? focusedBorder : inputBorder) : isUsernameValid ? withAlpha('#16A34A', 0.55) : withAlpha('#EF4444', 0.5);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? AppColors.canvasDark : '#FFF7ED' }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? AppColors.canvasDark : '#FFF9F0' }]}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         {/* Header: 6-segment progress + back arrow */}
         <View style={[styles.headerBar, { paddingTop: 8, paddingHorizontal: 24 }]}>
@@ -250,15 +250,17 @@ function SixStepWizardInner({ onOtpRequired }: { onOtpRequired?: (email: string)
                       onPress={() => { setDailyGoal(opt.v); void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); }}
                       style={[
                         styles.selectCard,
-                        { backgroundColor: active ? withAlpha(AppColors.primary, 0.08) : inputBg, borderColor: active ? AppColors.primary : inputBorder },
+                        active
+                          ? { backgroundColor: '#FFFFFF', borderColor: '#F97316', transform: [{ scale: 1.04 }] }
+                          : { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(249,115,22,0.85)', borderColor: 'rgba(255,255,255,0.35)' },
                       ]}
                     >
                       <Text style={{ fontSize: 18 }}><Text>{opt.icon}</Text></Text>
                       <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={[styles.selectLabel, { color: colors.ink }]}><Text>{opt.label}</Text></Text>
-                        <Text style={[styles.selectSub, { color: colors.muted }]}><Text>{opt.sub}</Text></Text>
+                        <Text style={[styles.selectLabel, { color: active ? (isDark ? colors.ink : '#F97316') : '#FFFFFF' }]}><Text>{opt.label}</Text></Text>
+                        <Text style={[styles.selectSub, { color: active ? colors.muted : 'rgba(255,255,255,0.85)' }]}><Text>{opt.sub}</Text></Text>
                       </View>
-                      {active ? <Ionicons name="checkmark-circle" size={22} color={AppColors.primary} /> : <View style={[styles.radioOuter, { borderColor: inputBorder }]} />}
+                      {active ? <Ionicons name="checkmark-circle" size={22} color={AppColors.primary} /> : <View style={[styles.radioOuter, { borderColor: 'rgba(255,255,255,0.6)' }]} />}
                     </TouchableOpacity>
                   );
                 })}
@@ -299,15 +301,17 @@ function SixStepWizardInner({ onOtpRequired }: { onOtpRequired?: (email: string)
                       onPress={() => { setMotivation(opt.k); void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); }}
                       style={[
                         styles.selectCard,
-                        { backgroundColor: active ? withAlpha(AppColors.primary, 0.08) : inputBg, borderColor: active ? AppColors.primary : inputBorder },
+                        active
+                          ? { backgroundColor: '#FFFFFF', borderColor: '#F97316', transform: [{ scale: 1.04 }] }
+                          : { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(249,115,22,0.85)', borderColor: 'rgba(255,255,255,0.35)' },
                       ]}
                     >
                       <Text style={{ fontSize: 18 }}><Text>{opt.icon}</Text></Text>
                       <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={[styles.selectLabel, { color: colors.ink }]}><Text>{opt.title}</Text></Text>
-                        <Text style={[styles.selectSub, { color: colors.muted }]}><Text>{opt.desc}</Text></Text>
+                        <Text style={[styles.selectLabel, { color: active ? (isDark ? colors.ink : '#F97316') : '#FFFFFF' }]}><Text>{opt.title}</Text></Text>
+                        <Text style={[styles.selectSub, { color: active ? colors.muted : 'rgba(255,255,255,0.85)' }]}><Text>{opt.desc}</Text></Text>
                       </View>
-                      {active ? <Ionicons name="checkmark-circle" size={22} color={AppColors.primary} /> : <View style={[styles.radioOuter, { borderColor: inputBorder }]} />}
+                      {active ? <Ionicons name="checkmark-circle" size={22} color={AppColors.primary} /> : <View style={[styles.radioOuter, { borderColor: 'rgba(255,255,255,0.6)' }]} />}
                     </TouchableOpacity>
                   );
                 })}
@@ -512,14 +516,14 @@ const styles = StyleSheet.create({
     maxWidth: 320,
     alignSelf: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 999,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#B45309',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
   },
   bubbleText: { fontSize: 13, lineHeight: 18, fontFamily: fontFamilyFor('w600'), textAlign: 'center' },
   bubbleTail: {
@@ -560,13 +564,13 @@ const styles = StyleSheet.create({
   selectCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    borderRadius: 16,
-    borderWidth: 1.5,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    borderRadius: 999,
+    borderWidth: 2,
     marginBottom: 10,
   },
-  selectLabel: { fontSize: 14, fontFamily: fontFamilyFor('w800'), letterSpacing: -0.2 },
+  selectLabel: { fontSize: 14.5, fontFamily: fontFamilyFor('w800'), letterSpacing: -0.2 },
   selectSub: { fontSize: 12, fontFamily: fontFamilyFor('w500') },
   radioOuter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2 },
   summaryCard: { borderRadius: 16, padding: 14, borderWidth: 1, alignItems: 'center' },
@@ -575,8 +579,8 @@ const styles = StyleSheet.create({
   badge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
   badgeText: { fontSize: 12, fontFamily: fontFamilyFor('w700') },
   summaryLine: { fontSize: 13, fontFamily: fontFamilyFor('w600'), textAlign: 'center' },
-  ctaShadow: { position: 'absolute', top: 0, left: 0, right: 0, height: 56, borderRadius: 16, backgroundColor: '#C2410C' },
-  ctaFront: { height: 52, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  ctaShadow: { position: 'absolute', top: 4, left: 0, right: 0, height: 52, borderRadius: 999, backgroundColor: '#C2410C' },
+  ctaFront: { height: 52, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   ctaFrontText: { fontSize: 16, fontFamily: fontFamilyFor('w800'), color: '#FFFFFF', letterSpacing: -0.2 },
   footerNote: { fontSize: 11, textAlign: 'center', fontFamily: fontFamilyFor('w500') },
 });

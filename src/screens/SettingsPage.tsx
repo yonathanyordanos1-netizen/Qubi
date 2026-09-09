@@ -24,6 +24,7 @@ import { LiquidGlassCard } from '../components/LiquidGlass';
 import { Pressable } from '../components/Pressable';
 import { StrokeIcon } from '../components/AppIcons';
 import { useNav } from './navContext';
+import { EditProfilePage } from './EditProfilePage';
 import { useAppStore, selectIsDemo, selectIsSignedIn, clearOnboarding } from '../state/appStore';
 import { useSettingsStore } from '../state/settingsStore';
 import { useGateStore } from '../state/gateStore';
@@ -482,12 +483,7 @@ export default function SettingsScreen({ onClose }: { onClose?: () => void }) {
         }}
       />
       <SearchSheet visible={searchOpen} onClose={() => setSearchOpen(false)} />
-      <EditProfileSheet
-        visible={profileOpen}
-        initialName={displayName}
-        initialUsername={username}
-        onClose={() => setProfileOpen(false)}
-      />
+      <EditProfilePage visible={profileOpen} onClose={() => setProfileOpen(false)} />
     </ScrollView>
   );
 }
@@ -847,105 +843,6 @@ function SearchResultRow({
         </View>
       </Pressable>
     </View>
-  );
-}
-
-/* ── Edit profile sheet ────────────────────────────────────── */
-
-function EditProfileSheet({
-  visible,
-  initialName,
-  initialUsername,
-  onClose,
-}: {
-  visible: boolean;
-  initialName: string;
-  initialUsername: string;
-  onClose: () => void;
-}) {
-  const { isDark, colors } = useTheme();
-  const nav = useNav();
-  const [name, setName] = useState(initialName);
-  const [username, setUsername] = useState(initialUsername);
-  const [saving, setSaving] = useState(false);
-
-  React.useEffect(() => {
-    if (visible) {
-      setName(initialName);
-      setUsername(initialUsername);
-    }
-  }, [visible, initialName, initialUsername]);
-
-  const save = useCallback(async () => {
-    if (saving) return;
-    setSaving(true);
-    try {
-      const error = await useAppStore.getState().setProfile({ name: name, username: username });
-      if (error != null) {
-        nav.toast(error);
-        return;
-      }
-      onClose();
-    } finally {
-      setSaving(false);
-    }
-  }, [saving, name, username, nav, onClose]);
-
-  return (
-    <CrossModal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.sheetBackdrop}>
-        <Pressable onTap={onClose} scale={1}>
-          <View style={styles.flex} />
-        </Pressable>
-        <View
-          style={[
-            styles.sheetProfile,
-            {
-              backgroundColor: isDark ? AppColors.glassDark : AppColors.glassLight,
-              borderColor: AppColors.glassEdge,
-            },
-          ]}
-        >
-          <Text style={[styles.sheetTitleMd, { color: colors.ink }]}>Edit Profile</Text>
-          <View style={{ height: 16 }} />
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="Full Name"
-            placeholderTextColor={colors.muted}
-            style={[styles.editField, { backgroundColor: colors.surfaceLowest, borderColor: AppColors.glassEdge, color: colors.ink }]}
-          />
-          <View style={{ height: 12 }} />
-          <TextInput
-            value={username}
-            onChangeText={setUsername}
-            placeholder="Username"
-            placeholderTextColor={colors.muted}
-            autoCapitalize="none"
-            style={[styles.editField, { backgroundColor: colors.surfaceLowest, borderColor: AppColors.glassEdge, color: colors.ink }]}
-          />
-          <View style={{ height: 6 }} />
-          <Text style={[styles.editHint, { color: colors.muted }]}>
-            3–16 chars · letters, numbers, _ — usernames are unique.
-          </Text>
-          <View style={{ height: 20 }} />
-          <Pressable onTap={() => void save()}>
-            <LinearGradient
-              colors={[AppColors.primary, AppColors.primaryDeep]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.saveButton}
-            >
-              {saving ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.sheetCtaText}>Save Changes</Text>
-              )}
-            </LinearGradient>
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
-    </CrossModal>
   );
 }
 

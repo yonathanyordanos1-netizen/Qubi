@@ -9,18 +9,14 @@
 import { useState } from 'react';
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Pressable as RnPressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CrossModal } from '../components/CrossModal';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { AppColors, withAlpha } from '../theme/colors';
@@ -30,6 +26,7 @@ import { Pressable } from '../components/Pressable';
 import { GoogleLogo, StrokeIcon } from '../components/AppIcons';
 import { WorkoutStatsCard } from '../components/WorkoutStatsCard';
 import { BarChartWidget } from '../components/BarChartWidget';
+import { EditProfilePage } from './EditProfilePage';
 import {
   avatarColors,
   selectBadges,
@@ -247,17 +244,25 @@ export function ProfilePage() {
         </View>
       ) : null}
 
-      {/* ── Weekly XP ── */}
+      {/* ── Weekly Progress — Duolingo-style you-vs-league chart ── */}
       <View style={styles.sectionSpacing}>
         <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#000000' }]}>
           <View style={styles.row}>
-            <Text style={[styles.cardTitle, { color: colors.ink }]}>Weekly XP</Text>
+            <Text style={[styles.cardTitle, { color: colors.ink }]}>Weekly Progress</Text>
             <View style={styles.flex1} />
             <View style={styles.verifiedPill}>
               <Text style={styles.verifiedPillText}>{completedCount} verified</Text>
             </View>
           </View>
-          <View style={{ height: 18 }} />
+          {/* You vs top-of-league legend, like the reference profile */}
+          <View style={{ height: 12 }} />
+          <View style={styles.row}>
+            <Text style={{ fontSize: 13, fontFamily: fontFamilyFor('w800'), color: AppColors.sky }}>{displayName.split(' ')[0] ?? displayName}</Text>
+            <View style={styles.flex1} />
+            <Text style={{ fontSize: 13, fontFamily: fontFamilyFor('w800'), color: colors.ink }}>{fmt(xp)} XP</Text>
+          </View>
+          <Text style={{ fontSize: 12, fontFamily: fontFamilyFor('w700'), color: AppColors.muted }}>You</Text>
+          <View style={{ height: 10 }} />
           <BarChartWidget values={weeklyBars} labels={WEEK_LABELS} activeIndex={todayIndex} height={180} />
         </View>
       </View>
@@ -362,7 +367,7 @@ export function ProfilePage() {
         </View>
       </View>
 
-      <EditProfileSheet visible={editOpen} onClose={() => setEditOpen(false)} initialName={displayName} initialUsername={username} />
+      <EditProfilePage visible={editOpen} onClose={() => setEditOpen(false)} />
     </ScrollView>
   );
 
@@ -481,132 +486,6 @@ function AboutRow({
 }
 
 // ── Edit profile sheet ──────────────────────────────────────────────────────
-
-function EditProfileSheet({
-  visible,
-  onClose,
-  initialName,
-  initialUsername,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  initialName: string;
-  initialUsername: string;
-}) {
-  const { colors, isDark } = useTheme();
-  const nav = useNav();
-  const [name, setName] = useState(initialName);
-  const [username, setUsername] = useState(initialUsername);
-  const [busy, setBusy] = useState(false);
-
-  const save = async () => {
-    if (busy) return;
-    setBusy(true);
-    const error = await useAppStore.getState().setProfile({ name, username });
-    setBusy(false);
-    if (error != null) {
-      nav.toast(error);
-      return;
-    }
-    onClose();
-  };
-
-  return (
-    <CrossModal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
-        style={styles.flex1}
-      >
-        <View style={[styles.flex1, { justifyContent: 'flex-end' }]}>
-          <RnPressable onPress={onClose} style={StyleSheet.absoluteFill}>
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.35)' }]} />
-          </RnPressable>
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', paddingHorizontal: 16, paddingBottom: 28 }}
-          >
-          <View
-            style={[
-              styles.sheet,
-              {
-                backgroundColor: isDark ? 'rgba(30,24,20,0.98)' : '#FFFFFF',
-                borderColor: '#000000',
-                borderWidth: 2.5,
-                borderRadius: 24,
-                shadowColor: '#000000',
-                shadowOpacity: 1,
-                shadowRadius: 0,
-                shadowOffset: { width: 4, height: 4 },
-                elevation: 0,
-              },
-            ]}
-          >
-            <Text style={[styles.sheetTitle, { color: colors.ink, textAlign: 'center', alignSelf: 'stretch' }]}>Edit Profile</Text>
-            <View style={{ height: 16 }} />
-            <SheetField icon="user" hint="Full Name" value={name} onChange={setName} dark={isDark} />
-            <View style={{ height: 12 }} />
-            <SheetField icon="sparkle" hint="Username" value={username} onChange={setUsername} autoCapitalize="none" dark={isDark} />
-            <View style={{ height: 6 }} />
-            <Text style={[styles.sheetHint, { color: colors.muted }]}>
-              3–16 chars · letters, numbers, _ — usernames are unique to you.
-            </Text>
-            <View style={{ height: 20 }} />
-            <Pressable scale={0.98} onTap={() => void save()}>
-              <LinearGradient colors={[AppColors.primary, AppColors.primaryDeep]} style={styles.saveButton}>
-                <Text style={styles.saveButtonText}>{busy ? 'Saving…' : 'Save Changes'}</Text>
-              </LinearGradient>
-            </Pressable>
-          </View>
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
-    </CrossModal>
-  );
-}
-
-function SheetField({
-  icon,
-  hint,
-  value,
-  onChange,
-  autoCapitalize,
-  dark,
-}: {
-  icon: string;
-  hint: string;
-  value: string;
-  onChange: (t: string) => void;
-  autoCapitalize?: 'none' | 'sentences' | 'words';
-  dark: boolean;
-}) {
-  const { colors } = useTheme();
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: dark ? 'rgba(255,255,255,0.06)' : '#FFF7ED',
-        borderRadius: 14,
-        borderWidth: 2,
-        borderColor: dark ? colors.glassEdge : '#00000022',
-        paddingHorizontal: 12,
-      }}
-    >
-      <StrokeIcon name={icon} size={18} color={AppColors.primary} />
-      <View style={{ width: 10 }} />
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        placeholder={hint}
-        placeholderTextColor={colors.muted}
-        autoCapitalize={autoCapitalize ?? 'sentences'}
-        style={[styles.sheetInput, { color: colors.ink }]}
-      />
-    </View>
-  );
-}
 
 const PRIMARY_GLOW = {
   shadowColor: AppColors.primary,

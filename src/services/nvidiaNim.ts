@@ -13,10 +13,10 @@ const NIM_ENDPOINT = 'https://integrate.api.nvidia.com/v1/chat/completions';
 
 /** Chat models, fastest/largest first. Availability varies — all best-effort. */
 const NIM_CHAT_MODELS = [
-  'nvidia/llama-3.1-nemotron-ultra-253b-v1',
-  'nvidia/nemotron-3-super-120b-a12b',
-  'moonshotai/kimi-k2.6',
-  'openai/gpt-oss-20b',
+  'nvidia/nemotron-3.5-lightning-30b-a3b',
+  'nvidia/llama-3.1-nemotron-70b-instruct',
+  'mistralai/mistral-nemotron',
+  'nvidia/nemotron-nano-3-30b-a3b',
 ];
 
 /** Vision-capable NIM models for photo-proof grading. */
@@ -64,7 +64,7 @@ async function postNim(body: Record<string, unknown>, timeoutMs: number): Promis
  */
 export async function nimChat(messages: AiMessage[], opts?: { maxTokens?: number; timeoutMs?: number }): Promise<string> {
   if (!isNimConfigured()) throw new Error('nim-unconfigured');
-  const perModel = opts?.timeoutMs ?? 12_000;
+  const perModel = opts?.timeoutMs ?? 8_000;
   let lastError: unknown = null;
   for (const model of NIM_CHAT_MODELS) {
     try {

@@ -119,10 +119,12 @@ const APP_URL = 'https://Qubi.app';
 const APP_TITLE = 'Qubi';
 
 const FALLBACK_CHAT_MODELS = [
-  'nvidia/nemotron-3-super-120b-a12b:free',
-  'nvidia/nemotron-3.5-lightning:free',
-  'google/gemma-4-26b-a4b-it:free',
+  'nex-agi/nex-n2.5-mini:free',
   'google/gemma-4-31b-it:free',
+  'google/gemma-4-26b-a4b-it:free',
+  'nvidia/nemotron-3.5-lightning:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'openrouter/free',
 ];
 const FALLBACK_VISION_MODELS = [
   'google/gemma-4-26b-a4b-it:free',
@@ -174,7 +176,9 @@ export class AiHttpException extends Error {
 
   /** Whether a different free model can be tried for this failure. */
   get retryable(): boolean {
-    return [402, 429, 500, 502, 503, 504, 408].includes(this.statusCode);
+    // 400 = model rejected the request (e.g. unsupported reasoning param) —
+    //        try the next free model. 404 = model id retired on OpenRouter.
+    return [400, 402, 404, 429, 408, 500, 502, 503, 504].includes(this.statusCode);
   }
 
   /** Short, human-friendly message for chat bubbles / toasts. */
@@ -186,13 +190,16 @@ export class AiHttpException extends Error {
       );
     }
     if (this.statusCode === 401 || this.statusCode === 403) {
-      return 'My AI key was rejected — please try again in a moment.';
+      return 'My AI key is not authorized right now — please try again in a moment.';
     }
     if (this.statusCode === 429) {
       return 'All the free AI models are rate-limited at the moment. Give it a few seconds, then try again.';
     }
-    if (this.statusCode === 502) {
+    if (this.statusCode === 502 || this.statusCode === 503) {
       return 'All AI models are unreachable right now — check your connection and try again.';
+    }
+    if (this.statusCode === 504 || this.statusCode === 408) {
+      return 'The AI took too long to answer — I asked again with a faster brain. Give it another try.';
     }
     return `I hit a snag talking to my brain (HTTP ${this.statusCode}). Please try again.`;
   }
@@ -246,6 +253,16 @@ class OpenRouterService {
   }): Promise<AiCompletion> {
     if (!this.isConfigured) return this.simulate(opts.messages);
 
+    // Global ceiling across every model retry so the chat never hangs longer
+    // than ~35s even when several free models are busy.
+    return withTimeout(this.completeWithRetry(opts), 35_000);
+  }
+
+  private async completeWithRetry(opts: {
+    messages: AiMessage[];
+    tools?: boolean;
+    toolChoice?: Record<string, unknown>;
+  }): Promise<AiCompletion> {
     let lastError: AiHttpException | null = null;
     for (const model of this.chatModels) {
       try {
@@ -271,6 +288,9 @@ class OpenRouterService {
       messages: messages.map(aiMessageToJson),
       temperature: 0.7,
       max_tokens: 900,
+      // Disable chain-of-thought on reasoning models so they answer directly
+      // instead of dumping "thinking process" text into the chat bubble.
+      reasoning: { effort: 'none' },
     };
     if (tools) {
       payload.tools = [CREATE_ROUTINE_PLAN_TOOL];
@@ -278,7 +298,7 @@ class OpenRouterService {
     }
     const res = await withTimeout(
       fetch(ENDPOINT, { method: 'POST', headers: this.headers(), body: JSON.stringify(payload) }),
-      45_000,
+      25_000,
     );
     const text = await res.text();
     if (res.status !== 200) throw new AiHttpException(res.status, text);
@@ -348,7 +368,7 @@ class OpenRouterService {
         headers: this.headers(),
         body: JSON.stringify(payload),
       }),
-      45_000,
+      25_000,
     );
     if (res.status !== 200 || res.body == null) {
       throw new AiHttpException(res.status, await res.text().catch(() => ''));

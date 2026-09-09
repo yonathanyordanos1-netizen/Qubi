@@ -8,7 +8,9 @@ import { DuolingoGuide } from '../src/screens/onboarding/DuolingoGuide';
 import { SixStepWizard } from '../src/screens/onboarding/SixStepWizard';
 import { LoginScreen } from '../src/screens/auth/LoginScreen';
 import { VerifyOtpScreen } from '../src/screens/auth/VerifyOtpScreen';
+import ProfileSetupScreen from '../src/screens/ProfileSetupScreen';
 import { markOnboardingComplete } from '../src/state/appStore';
+import { useAppStore } from '../src/state/appStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../src/theme/ThemeProvider';
 import { supabase, SupabaseServiceInstance } from '../src/services/supabase';
@@ -81,6 +83,7 @@ export default function Index() {
     } else {
       unsub = SupabaseServiceInstance.onAuthState((_event, sess) => {
         if (mounted) setSession(sess);
+        void useAppStore.getState().hydrateFromSupabase();
       });
     }
     return () => {
@@ -144,6 +147,9 @@ export default function Index() {
           onVerified={async () => {
             setPendingOtpEmail(null);
             await markOnboardingComplete();
+            try {
+              await useAppStore.getState().hydrateFromSupabase();
+            } catch {}
           }}
         />
       </View>
@@ -158,6 +164,9 @@ export default function Index() {
           onBack={() => {}}
           onLoginSuccess={async () => {
             await markOnboardingComplete();
+            try {
+              await useAppStore.getState().hydrateFromSupabase();
+            } catch {}
           }}
           onOtpRequired={(email) => setPendingOtpEmail(email)}
         />
@@ -165,7 +174,19 @@ export default function Index() {
     );
   }
 
-  // STEP 6 — Authenticated users go straight to the dashboard
+  // STEP 6 — identity gate: new accounts pick a name + @username once
+  if (session != null) {
+    const pending = useAppStore.getState().profileSetupPending;
+    if (pending) {
+      return (
+        <View style={{ flex: 1, backgroundColor: colors.canvas, paddingTop: insets.top }}>
+          <ProfileSetupScreen onComplete={() => useAppStore.getState().completeProfileSetup()} />
+        </View>
+      );
+    }
+  }
+
+  // STEP 7 — Authenticated users go straight to the dashboard
   return (
     <View style={{ flex: 1, backgroundColor: colors.canvas, alignItems: 'center', justifyContent: 'center', paddingTop: insets.top }}>
       <Text style={{ color: colors.ink, fontSize: 18, fontWeight: '800' }}><Text>{'Qubi • Ready'}</Text></Text>

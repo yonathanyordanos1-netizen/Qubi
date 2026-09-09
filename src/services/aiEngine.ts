@@ -67,12 +67,12 @@ async function openRouterChatLeg(messages: AiMessage[]): Promise<string> {
 
 /**
  * One-shot coaching reply — NVIDIA NIM and OpenRouter race; the faster
- * provider wins. Overall ceiling ~50s; typical win in 2–8s.
+ * provider wins. Overall ceiling ~40s; typical win in 2–6s.
  */
 export async function chatReply(messages: AiMessage[]): Promise<string> {
   const legs: Array<() => Promise<string>> = [];
   if (isNimConfigured()) {
-    legs.push(() => nimChat(messages, { maxTokens: 600, timeoutMs: 12_000 }).then(nonEmpty));
+    legs.push(() => nimChat(messages, { maxTokens: 600, timeoutMs: 8_000 }).then(nonEmpty));
   }
   legs.push(() => openRouterChatLeg(messages));
   return firstSuccess(legs);

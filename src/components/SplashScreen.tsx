@@ -1,12 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { fontFamilyFor } from '../theme/typography';
 
 const QUBI = require('../../Qubi/Qubi_2.jpg');
 
-// Duolingo-green launch splash. Keep the export shape + slide-up exit
-// contract (App.tsx unmounts this at ~2500ms via `duration`).
-const DUO_GREEN = '#58CC02';
+// Qubi quest-orange launch splash (was Duolingo green — didn't match theme).
+// Keep the export shape + slide-up exit contract (App.tsx unmounts this at
+// ~2500ms via `duration`).
+const QUBI_ORANGE = '#F97316';
+const QUBI_ORANGE_DEEP = '#EA580C';
 
 export interface SplashScreenProps {
   /** Total duration before the slide-up exit completes (ms). Sync with App's unmount timer. */
@@ -14,10 +17,10 @@ export interface SplashScreenProps {
 }
 
 /**
- * Qubi launch splash — Duolingo style: solid Duo Green canvas, big mascot
- * springs in with a playful overshoot + gentle bounce, "Qubi" wordmark pops
- * up right after, tagline pill fades in, white loading bar sweeps near the
- * bottom. Exits with the signature slide-up at `duration - 500ms`.
+ * Qubi launch splash — quest-orange style: warm orange gradient canvas, big
+ * mascot springs in with a playful overshoot + gentle bounce, "Qubi" wordmark
+ * pops up right after, tagline pill fades in, white loading bar sweeps near
+ * the bottom. Exits with the signature slide-up at `duration - 500ms`.
  */
 export function SplashScreen({ duration = 2500 }: SplashScreenProps) {
   const { height } = useWindowDimensions();
@@ -76,11 +79,24 @@ export function SplashScreen({ duration = 2500 }: SplashScreenProps) {
 
   return (
     <View style={[StyleSheet.absoluteFill, styles.overlay]}>
+      {/* Warm quest-orange gradient wash (light top → deep ember bottom) */}
+      <LinearGradient
+        colors={[QUBI_ORANGE, QUBI_ORANGE_DEEP]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
       <Animated.View
         style={[StyleSheet.absoluteFill, styles.centerWrap, { opacity: fade, transform: [{ translateY }] }]}
         pointerEvents="auto"
       >
         <View style={styles.halo} pointerEvents="none" />
+        {/* Soft sun rays behind the mascot (Qubi star-glow motif) */}
+        <View style={styles.rayWrap} pointerEvents="none">
+          {[0, 45, 90, 135].map((deg) => (
+            <View key={deg} style={[styles.ray, { transform: [{ rotate: `${deg}deg` }] }]} />
+          ))}
+        </View>
         <Animated.View
           style={{
             transform: [
@@ -136,7 +152,7 @@ const styles = StyleSheet.create({
   overlay: {
     width: '100%',
     height: '100%',
-    backgroundColor: DUO_GREEN,
+    backgroundColor: QUBI_ORANGE,
   },
   centerWrap: {
     alignItems: 'center',
@@ -147,7 +163,21 @@ const styles = StyleSheet.create({
     width: 340,
     height: 340,
     borderRadius: 170,
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  rayWrap: {
+    position: 'absolute',
+    width: 420,
+    height: 420,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ray: {
+    position: 'absolute',
+    width: 420,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
   mascotRing: {
     width: 184,
@@ -156,9 +186,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
     borderWidth: 6,
-    borderColor: 'rgba(255,255,255,0.85)',
+    borderColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#7C2D12',
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 12,
   },
   mascot: {
     width: 172,
@@ -172,6 +207,9 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
     textAlign: 'center',
     fontFamily: fontFamilyFor('w800'),
+    textShadowColor: 'rgba(124,45,18,0.35)',
+    textShadowRadius: 12,
+    textShadowOffset: { width: 0, height: 3 },
   },
   tagPill: {
     backgroundColor: 'rgba(255,255,255,0.24)',

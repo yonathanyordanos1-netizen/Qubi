@@ -12,6 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { AppColors, withAlpha } from '../theme/colors';
 import { fontFamilyFor } from '../theme/typography';
@@ -194,9 +195,10 @@ export function ProofSuccessModal({
       <View style={styles.centerWrap} pointerEvents="box-none">
         <Animated.View style={[enterStyle, styles.cardShadow]}>
           <View style={styles.card}>
-            {/* Green hero panel — mascot + star burst celebration */}
+            {/* Dark legendary hero panel — glowing badge + mascot, ref image 1 right */}
             <View style={styles.heroPanel}>
               <View style={styles.avatarStack}>
+                <LegendaryCrown />
                 <Animated.View style={[styles.burstLayer, burstGlow, burstScale]} pointerEvents="none">
                   {Array.from({ length: 8 }, (_, i) => (
                     <StarBurst key={i} index={i} />
@@ -263,7 +265,7 @@ export function ProofSuccessModal({
               </Text>
             </View>
 
-            {/* 3D tactile CONTINUE — solid orange with 4px dark bottom border */}
+            {/* 3D tactile GOT IT — gold pill like the legendary reference */}
             <Animated.View style={[styles.ctaWrap, ctaStyle]}>
               <View style={styles.ctaShadow} />
               <Pressable
@@ -271,7 +273,7 @@ export function ProofSuccessModal({
                 scale={0.985}
               >
                 <View style={styles.ctaFront}>
-                  <Text style={styles.ctaText}>CONTINUE</Text>
+                  <Text style={styles.ctaText}>GOT IT!</Text>
                 </View>
               </Pressable>
             </Animated.View>
@@ -295,6 +297,32 @@ export function ProofSuccessModal({
           </View>
         </Animated.View>
       </View>
+    </View>
+  );
+}
+
+/** Glowing golden crown badge hovering above the mascot (legendary ref). */
+function LegendaryCrown() {
+  const pulse = useSharedValue(0.7);
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withSequence(withTiming(1, { duration: 900, easing: Easing.inOut(Easing.ease) }), withTiming(0.7, { duration: 900 })),
+      -1,
+      true,
+    );
+  }, [pulse]);
+  const glowStyle = useAnimatedStyle(() => ({ opacity: pulse.value, transform: [{ scale: 0.9 + pulse.value * 0.25 }] }));
+  return (
+    <View pointerEvents="none" style={styles.crownWrap}>
+      <Animated.View style={[styles.crownGlow, glowStyle]} />
+      <LinearGradient
+        colors={['#FFC531', '#F59E0B']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.crownBadge}
+      >
+        <StrokeIcon name="check" size={22} color="#FFFFFF" strokeWidth={3} />
+      </LinearGradient>
     </View>
   );
 }
@@ -389,13 +417,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     maxHeight: '94%',
   },
-  /* Green Duolingo hero panel holding the celebration */
+  /* Dark legendary hero panel — glowing crown + mascot (ref image 1 right) */
   heroPanel: {
-    backgroundColor: DUO_GREEN,
-    borderBottomWidth: 2.5,
-    borderBottomColor: '#000',
-    paddingTop: 18,
-    paddingBottom: 14,
+    backgroundColor: '#0E1B24',
+    paddingTop: 22,
+    paddingBottom: 16,
     alignItems: 'center',
   },
   sheetBody: {
@@ -405,6 +431,33 @@ const styles = StyleSheet.create({
 
   /* Avatar + star burst */
   avatarStack: { alignItems: 'center', justifyContent: 'center', height: 132, marginBottom: 6 },
+  crownWrap: {
+    position: 'absolute',
+    top: -6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 3,
+  },
+  crownGlow: {
+    position: 'absolute',
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: 'rgba(255,197,49,0.35)',
+  },
+  crownBadge: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ rotate: '45deg' }],
+    shadowColor: '#FFC531',
+    shadowOpacity: 0.9,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
+  },
   rewardGlyphWrap: { position: 'absolute', right: 28, top: 6 },
   rewardGlyph: { fontSize: 40 },
   burstLayer: { position: 'absolute', width: 220, height: 220, alignItems: 'center', justifyContent: 'center' },
@@ -417,10 +470,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
-  /* Headline — Duolingo result style */
+  /* Headline — Duolingo legendary gold */
   headline: {
     textAlign: 'center',
-    color: DUO_GREEN_DEEP,
+    color: '#B45309',
     fontFamily: fontFamilyFor('w900'),
     fontSize: 30,
     lineHeight: 34,
@@ -519,25 +572,25 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
 
-  /* 3D tactile CONTINUE — Duolingo green */
+  /* 3D tactile GOT IT — golden Duolingo legendary pill */
   ctaWrap: { marginTop: 18 },
   ctaShadow: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: DUO_GREEN_DEEP,
+    backgroundColor: '#E8930C',
     borderRadius: 999,
   },
   ctaFront: {
     height: 56,
     borderRadius: 999,
-    backgroundColor: DUO_GREEN,
+    backgroundColor: '#FFC531',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: DUO_GREEN_DEEP,
+    borderColor: '#E8930C',
     borderBottomWidth: 0,
   },
   ctaText: {
-    color: '#FFFFFF',
+    color: '#7A4A12',
     fontFamily: fontFamilyFor('w900'),
     fontSize: 16,
     letterSpacing: 1.1,

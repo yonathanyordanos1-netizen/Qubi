@@ -1,40 +1,57 @@
 import React, { useRef, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppColors, withAlpha } from '../../theme/colors';
+import { AppColors } from '../../theme/colors';
 import { fontFamilyFor } from '../../theme/typography';
-import { useTheme } from '../../theme/ThemeProvider';
-import { useGateStore } from '../../state/gateStore';
 import { QubiMascot } from '../../components/QubiMascot';
 import { playStepClick } from '../../services/soundService';
+import { useGateStore } from '../../state/gateStore';
+import { WidgetGuideScreenshots } from '../../components/onboarding/WidgetGuideScreenshots';
 
 /**
- * DuolingoGuide — 4-step onboarding carousel (Neubrutalism edition).
+ * DuolingoGuide — 4-step onboarding carousel (reference image 1).
+ * Each slide is a full-bleed themed stage:
+ *   1. ORANGE — "You're acing your habits!" — big %, mascot on a meadow.
+ *   2. GREEN  — pure LikeLingo splash — giant mascot face + wordmark.
+ *   3. DARK   — legendary celebration — glowing badge + gold mascot.
+ *   4. LIGHT  — widget how-to (mini widget replica + pin-the-widget steps).
  * Routing: "Get Started"/"Skip" persist the hasCompletedOnboarding flag
  * (gateStore → AsyncStorage) then transition to Sign Up; slide-4 link goes
- * to Log In. Cards: 2.5px black borders, hard 4×4 offset shadows, r20.
- * Skip shows on steps 1–3 only.
- *
- * Slide 4 is the "Add the Widget" how-to: a full Duolingo-style widget mock
- * (orange card, bold "N Days", Mo–Fr ✓ chain, mascot) above three numbered
- * steps that mirror exactly how you pin a widget on iOS/Android.
+ * to Log In. Skip shows on steps 1–3 only.
  */
 
 const { width: W, height: H } = Dimensions.get('window');
-// Compact hero on short screens (SE) so the card never overflows.
-const VISUAL_H = Math.max(88, Math.min(120, H * 0.15));
-const CARD_MAX_W = Math.min(320, W - 48);
 
 const SLIDES = [
-  { title: 'Build Daily Habits', desc: 'Lock in streaks and crush your daily goal — Qubi keeps you accountable every single day.' },
-  { title: 'Earn XP & Level Up', desc: 'Every verified quest earns 10–120 XP based on effort. Level up and unlock avatar rewards.' },
-  { title: 'Compete with Friends', desc: 'Climb the leaderboard, take on friend challenges and win weekly leagues.' },
-  { title: 'Add the Streak Widget', desc: 'Pin Qubi to your Home Screen like Duolingo does — your streak, always one glance away.' },
+  {
+    key: 'orange',
+    title: "You're acing your habits today!",
+    desc: 'You praticed 50 quests today with an\naverage accuracy of 97%',
+    cta: 'SHARE +20 GEMS',
+  },
+  {
+    key: 'green',
+    title: 'Level up your life',
+    desc: 'Snap proof. Stack XP. Climb leagues.\nQubi keeps you accountable daily.',
+    cta: 'CONTINUE',
+  },
+  {
+    key: 'dark',
+    title: 'You earned Legendary on this level!',
+    desc: "Congratulations! You've proven your\nskills and unlocked a special color",
+    cta: 'GOT IT!',
+  },
+  {
+    key: 'widget',
+    title: 'Add the Qubi Widget',
+    desc: 'Pin Qubi to your Home Screen like\nDuolingo does — always one glance away.',
+    cta: 'Get Started',
+  },
 ] as const;
 
 /** expo-router navigation when available; no-op in the classic-entry build */
@@ -67,12 +84,9 @@ const finishGuide = (onCustom: (() => void) | undefined, href: string) => {
 };
 
 export function DuolingoGuide({ onGetStarted, onSkip, onLogin, onDone }: { onGetStarted?: () => void; onSkip?: () => void; onLogin?: () => void; onDone?: () => void }) {
-  const { isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);
-  const ctaPressY = useSharedValue(0);
-  const ctaAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ translateY: ctaPressY.value }] }));
 
   const goTo = (i: number) => {
     scrollRef.current?.scrollTo({ x: i * W, animated: true });
@@ -109,12 +123,11 @@ export function DuolingoGuide({ onGetStarted, onSkip, onLogin, onDone }: { onGet
     finishGuide(onLogin, '/auth/login');
   };
 
-  const canvas = isDark ? AppColors.canvasDark : '#FFF7ED';
   const last = index === SLIDES.length - 1;
 
   return (
-    <View style={[styles.flex, { backgroundColor: canvas }]}>
-      {/* Top bar: chunky Neubrutalist progress segments + Skip (steps 1–3 only) */}
+    <View style={styles.flex}>
+      {/* Top bar: progress segments + Skip (steps 1–3 only) */}
       <View style={[styles.topBar, { paddingTop: insets.top + 12, paddingHorizontal: 24 }]}>
         <View style={styles.progressRow}>
           {SLIDES.map((_, i) => (
@@ -122,21 +135,28 @@ export function DuolingoGuide({ onGetStarted, onSkip, onLogin, onDone }: { onGet
               key={i}
               style={[
                 styles.progressSegment,
-                { backgroundColor: i <= index ? '#F97316' : isDark ? 'rgba(255,255,255,0.12)' : '#FFFFFF' },
+                {
+                  backgroundColor:
+                    i === index
+                      ? '#FFFFFF'
+                      : i < index
+                        ? 'rgba(255,255,255,0.55)'
+                        : 'rgba(255,255,255,0.25)',
+                },
               ]}
             />
           ))}
         </View>
         {!last ? (
           <TouchableOpacity onPress={handleSkip} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={styles.skipButton}>
-            <Text style={styles.skipText}><Text>{'Skip'}</Text></Text>
+            <Text style={styles.skipText}>{'Skip'}</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.skipPlaceholder} />
         )}
       </View>
 
-      {/* 4-slide carousel — Neubrutalist card per slide */}
+      {/* 4-slide carousel — full-bleed themed stages */}
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -145,306 +165,385 @@ export function DuolingoGuide({ onGetStarted, onSkip, onLogin, onDone }: { onGet
         onMomentumScrollEnd={handleMomentum}
         style={styles.flex}
       >
-        {SLIDES.map((slide, i) => (
-          <View key={slide.title} style={[styles.slide, { width: W }]}>
-            <View style={[styles.guideCard, { maxWidth: CARD_MAX_W }]}>
-              {/* Hero: rounded-square liquid-glass tile with mascot */}
-              <View style={[styles.heroTile, { height: VISUAL_H }]}>
-                {i === 0 ? <QubiMascot size={76} bob /> : i === 1 ? <QubiMascot size={76} pulseGlow /> : i === 2 ? <QubiMascot size={76} celebrating /> : <WidgetPreview />}
-                {i === 0 ? (
-                  <View style={styles.accentPos}><FlamePulse /></View>
-                ) : i === 1 ? (
-                  <View style={styles.accentPos}><FloatXpChip /></View>
-                ) : i === 2 ? (
-                  <View style={styles.accentPos}><TrophyChip /></View>
-                ) : null}
-              </View>
-
-              {/* Slide stat rows */}
-              {i === 0 ? <StreakRows /> : i === 1 ? <XpRows /> : i === 2 ? <LeaderRows /> : <WidgetSteps />}
-
-              <View style={styles.cardSpacer} />
-              <Text style={styles.slideTitle}><Text>{slide.title}</Text></Text>
-              <View style={{ height: 8 }} />
-              <Text style={styles.slideDesc}><Text>{slide.desc}</Text></Text>
-              <View style={{ height: 16 }} />
-
-              {/* Full-width Neubrutalist CTA with hard offset shadow + tactile press */}
-              <View style={{ width: '100%', marginTop: 8 }}>
-                <Animated.View style={ctaAnimatedStyle}>
-                  <TouchableOpacity
-                    activeOpacity={0.95}
-                    onPressIn={() => { ctaPressY.value = withSpring(3, { damping: 18, stiffness: 420 }); void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); }}
-                    onPressOut={() => { ctaPressY.value = withSpring(0, { damping: 16, stiffness: 360 }); }}
-                    onPress={handleCta}
-                    style={styles.ctaFront}
-                  >
-                    <Text style={styles.ctaFrontText}><Text>{index < SLIDES.length - 1 ? 'Continue' : 'Get Started'}</Text></Text>
-                  </TouchableOpacity>
-                </Animated.View>
-              </View>
-
-              {i === SLIDES.length - 1 ? (
-                <>
-                  <View style={{ height: 12 }} />
-                  <TouchableOpacity onPress={handleLogin} hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }} style={styles.loginLink}>
-                    <Text style={styles.loginLinkText}><Text>{'Already have an account? Log In'}</Text></Text>
-                  </TouchableOpacity>
-                </>
-              ) : null}
-            </View>
+        {/* Slide 1 — ORANGE stats hero */}
+        <View style={[styles.slide, { width: W }]}>
+          <View style={[styles.bigStat, { top: H * 0.1 }]}>
+            <Text style={styles.bigStatText}>
+              {'95'}
+              <Text style={styles.bigStatPct}>%</Text>
+            </Text>
           </View>
-        ))}
+          <View style={styles.stageCenter}>
+            <MeadowBackdrop />
+            <QubiMascot size={190} bob celebrating />
+          </View>
+          <BottomCopy
+            title={SLIDES[0].title}
+            desc={SLIDES[0].desc}
+            cta={SLIDES[0].cta}
+            onPress={handleCta}
+            variant="orange"
+          />
+        </View>
+
+        {/* Slide 2 — GREEN brand splash */}
+        <View style={[styles.slide, { width: W, backgroundColor: '#58CC02' }]}>
+          <View style={styles.stageCenter}>
+            <GardenDecor />
+            <MascotFace />
+          </View>
+          <View style={[styles.wordmarkWrap, { bottom: H * 0.22 }]}>
+            <Text style={styles.wordmark}>{'Qubi'}</Text>
+          </View>
+          <BottomCopy
+            title={SLIDES[1].title}
+            desc={SLIDES[1].desc}
+            cta={SLIDES[1].cta}
+            onPress={handleCta}
+            variant="green"
+          />
+        </View>
+
+        {/* Slide 3 — DARK legendary celebration */}
+        <View style={[styles.slide, { width: W, backgroundColor: '#0E1B24' }]}>
+          <View style={styles.stageCenter}>
+            <LegendaryBadge />
+            <QubiMascot size={180} celebrating pulseGlow />
+          </View>
+          <BottomCopy
+            title={SLIDES[2].title}
+            desc={SLIDES[2].desc}
+            cta={SLIDES[2].cta}
+            onPress={handleCta}
+            variant="gold"
+          />
+        </View>
+
+        {/* Slide 4 — LIGHT widget how-to (real screenshot walkthrough) */}
+        <View style={[styles.slide, { width: W, backgroundColor: '#FFF9F0' }]}>
+          <View style={[styles.stageCenter, { gap: 10, justifyContent: 'flex-start', paddingTop: 8 }]}>
+            <WidgetGuideScreenshots />
+          </View>
+          <BottomCopy
+            title={SLIDES[3].title}
+            desc={SLIDES[3].desc}
+            cta={SLIDES[3].cta}
+            onPress={handleCta}
+            variant="orange"
+            extraLink
+            onLogin={handleLogin}
+          />
+        </View>
       </ScrollView>
     </View>
   );
 }
 
-/** Flame badge with scale pulse — Slide 1 floating accent */
-function FlamePulse() {
-  const s = useSharedValue(1);
-  React.useEffect(() => { s.value = withRepeat(withSpring(1.16, { damping: 10, stiffness: 120 }), -1, true); }, [s]);
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
-  return (<Animated.View style={style}><View style={styles.flameBadge}><Ionicons name="flame" size={22} color="#FFFFFF" /></View></Animated.View>);
-}
+/* ── Shared stage pieces ─────────────────────────────────────────────── */
 
-/** XP chip with soft float — Slide 2 floating accent */
-function FloatXpChip() {
-  const y = useSharedValue(0);
-  React.useEffect(() => { y.value = withRepeat(withTiming(-6, { duration: 1200 }), -1, true); }, [y]);
-  const style = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
-  return (<Animated.View style={[styles.xpFloatChip, style]}><Text style={styles.xpFloatText}><Text>{'+120 XP 🔥'}</Text></Text></Animated.View>);
-}
+/** Bottom text block + 3D pill CTA used by every slide. */
+function BottomCopy({
+  title,
+  desc,
+  cta,
+  onPress,
+  variant,
+  extraLink,
+  onLogin,
+}: {
+  title: string;
+  desc: string;
+  cta: string;
+  onPress: () => void;
+  variant: 'orange' | 'green' | 'gold';
+  extraLink?: boolean;
+  onLogin?: () => void;
+}) {
+  const palette =
+    variant === 'gold'
+      ? { ctaBg: '#FFC531', ctaEdge: '#E8930C', ink: '#FFFFFF', sub: 'rgba(255,255,255,0.75)' }
+      : variant === 'green'
+        ? { ctaBg: '#FFFFFF', ctaEdge: '#D9E7CE', ink: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }
+        : { ctaBg: '#F97316', ctaEdge: '#C2410C', ink: '#FFFFFF', sub: 'rgba(255,255,255,0.8)' };
+  const ctaInk = variant === 'gold' ? '#7A4A12' : variant === 'green' ? '#58CC02' : '#FFFFFF';
 
-/** Trophy chip with soft float — Slide 3 floating accent */
-function TrophyChip() {
-  const y = useSharedValue(0);
-  React.useEffect(() => { y.value = withRepeat(withTiming(-5, { duration: 1300 }), -1, true); }, [y]);
-  const style = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
-  return (<Animated.View style={[styles.trophyFloatChip, style]}><Text style={{ fontSize: 16 }}><Text>{'🏆'}</Text></Text><Text style={styles.trophyFloatText}><Text>{'Weekly League'}</Text></Text></Animated.View>);
-}
+  const pressY = useSharedValue(0);
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ translateY: pressY.value }] }));
 
-/** Slide 1 stat rows — streak + daily goal */
-function StreakRows() {
   return (
-    <View style={styles.statCard}>
-      <View style={styles.statRow}>
-        <View style={styles.flameDot}><Ionicons name="flame" size={20} color="#F97316" /></View>
-        <View style={{ marginLeft: 10 }}>
-          <Text style={styles.statBig}><Text>{'12'}</Text></Text>
-          <Text style={styles.statCaption}><Text>{'day streak'}</Text></Text>
+    <View style={styles.bottomCopy}>
+      <Text style={[styles.slideTitle, { color: palette.ink }]}>
+        {title}
+      </Text>
+      <View style={{ height: 8 }} />
+      <Text style={[styles.slideDesc, { color: palette.sub }]}>
+        {desc}
+      </Text>
+      <View style={{ height: 22 }} />
+      {/* 3D tactile pill CTA */}
+      <View style={styles.ctaWrap}>
+        <View style={[styles.ctaShadow, { backgroundColor: palette.ctaEdge }]} />
+        <Animated.View style={pressStyle}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPressIn={() => { pressY.value = withSpring(4, { damping: 18, stiffness: 420 }); void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); }}
+            onPressOut={() => { pressY.value = withSpring(0, { damping: 16, stiffness: 360 }); }}
+            onPress={onPress}
+            style={[styles.ctaFront, { backgroundColor: palette.ctaBg }]}
+          >
+            <Text style={[styles.ctaText, { color: ctaInk }]}>{cta}</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+      {extraLink ? (
+        <>
+          <View style={{ height: 14 }} />
+          <TouchableOpacity onPress={onLogin} hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}>
+            <Text style={styles.loginLink}>{'Already have an account? Log In'}</Text>
+          </TouchableOpacity>
+        </>
+      ) : null}
+    </View>
+  );
+}
+
+/** Slide-1 meadow island under the mascot. */
+function MeadowBackdrop() {
+  return (
+    <View pointerEvents="none" style={styles.meadowWrap}>
+      <LinearGradient
+        colors={['rgba(255,255,255,0.0)', 'rgba(255,255,255,0.28)']}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.meadowIsland}>
+        <View style={styles.meadowTop}>
+          <View style={styles.meadowTree} />
+          <View style={[styles.meadowTree, { alignSelf: 'flex-end', width: 20, height: 26 }]} />
         </View>
-        <View style={styles.statSpacer} />
-        <View style={styles.goalChip}><Text style={styles.goalChipText}><Text>{'Daily Goal'}</Text></Text></View>
-      </View>
-      <View style={{ height: 14 }} />
-      <View style={styles.barTrack}>
-        <View style={[styles.barFill, { width: '72%' }]} />
       </View>
     </View>
   );
 }
 
-/** Slide 2 stat rows — level + XP */
-function XpRows() {
+/** Slide-2 giant mascot face (LikeLingo style) — built from circles. */
+function MascotFace() {
   return (
-    <View style={styles.statCard}>
-      <Text style={styles.statBig}><Text>{'Level 7'}</Text></Text>
-      <View style={{ height: 4 }} />
-      <Text style={styles.statCaption}><Text>{'1,450 XP total'}</Text></Text>
-      <View style={{ height: 12 }} />
-      <View style={styles.rewardRow}>
-        <Ionicons name="diamond" size={16} color={AppColors.sky} />
-        <View style={{ width: 6 }} />
-        <Text style={styles.rewardText}><Text>{'Next: Golden Avatar'}</Text></Text>
+    <View style={styles.faceWrap}>
+      {/* eyes */}
+      <View style={styles.eyeRow}>
+        <View style={styles.eye}>
+          <View style={styles.pupil} />
+        </View>
+        <View style={styles.eye}>
+          <View style={styles.pupil} />
+        </View>
       </View>
+      {/* brows */}
+      <View style={[styles.brow, { top: -14, left: 26, transform: [{ rotate: '-14deg' }] }]} />
+      <View style={[styles.brow, { top: -14, right: 26, transform: [{ rotate: '14deg' }] }]} />
+      {/* snout */}
+      <View style={styles.snout}>
+        <View style={styles.nostril} />
+        <View style={styles.mouth}>
+          <View style={styles.tongue} />
+        </View>
+      </View>
+      {/* spikes */}
+      {[
+        { top: 8, right: -26, r: '20deg' },
+        { top: 46, right: -34, r: '0deg' },
+        { top: 84, right: -26, r: '-20deg' },
+      ].map((s, i) => (
+        <View key={i} style={[styles.spike, { top: s.top, right: s.right, transform: [{ rotate: s.r }] }]} />
+      ))}
     </View>
   );
 }
 
-/** Slide 4 hero — a faithful mini replica of the real Qubi home-screen widget */
+/** Slide-2 garden flowers/grass at the bottom edge. */
+function GardenDecor() {
+  return (
+    <View pointerEvents="none" style={styles.gardenWrap}>
+      <View style={[styles.flower, { left: 34, bottom: 6 }]}>
+        <View style={styles.flowerPetal} />
+        <View style={styles.flowerCenter} />
+      </View>
+      <View style={[styles.flower, { right: 40, bottom: 12 }]}>
+        <View style={[styles.flowerPetal, { backgroundColor: '#FFFFFF' }]} />
+        <View style={[styles.flowerCenter, { backgroundColor: '#F97316' }]} />
+      </View>
+      <View style={[styles.grassBlade, { left: 70, bottom: 0, transform: [{ rotate: '-16deg' }] }]} />
+      <View style={[styles.grassBlade, { right: 84, bottom: 0, transform: [{ rotate: '18deg' }] }]} />
+    </View>
+  );
+}
+
+/** Slide-3 glowing legendary badge above the mascot. */
+function LegendaryBadge() {
+  const glow = useSharedValue(0.6);
+  React.useEffect(() => {
+    glow.value = withRepeat(withTiming(1, { duration: 1200 }), -1, true);
+  }, [glow]);
+  const glowStyle = useAnimatedStyle(() => ({ opacity: glow.value, transform: [{ scale: 1 + (glow.value - 0.6) * 0.5 }] }));
+  return (
+    <View style={styles.badgeWrap}>
+      <Animated.View style={[styles.badgeGlow, glowStyle]} />
+      <LinearGradient colors={['#FFC531', '#F59E0B']} style={styles.badge}>
+        <View style={styles.badgeInner}>
+          <Text style={styles.badgeCheck}>{'✓'}</Text>
+        </View>
+      </LinearGradient>
+      <View style={[styles.badgeSpark, { top: -8, left: -12 }]} />
+      <View style={[styles.badgeSpark, { top: 4, right: -14, width: 8, height: 8 }]} />
+    </View>
+  );
+}
+
+/** Slide-4 widget replica — mirrors widgets/QubiWidget.tsx (FIRE theme). */
 function WidgetPreview() {
   return (
     <View style={styles.widgetMock}>
-      {/* Left column: flame + big days + status + dot chain (like the real widget) */}
       <View style={{ flex: 1 }}>
         <View style={styles.widgetMockHead}>
-          <Text style={{ fontSize: 16 }}><Text>{'🔥'}</Text></Text>
-          <Text style={styles.widgetMockStreak}><Text>{'12 Days'}</Text></Text>
+          <Text style={{ fontSize: 16 }}>{'🔥'}</Text>
+          <Text style={styles.widgetMockStreak}>{'12 Days'}</Text>
         </View>
-        <Text style={styles.widgetMockSub}><Text>{"You're on fire!"}</Text></Text>
+        <Text style={styles.widgetMockSub}>{"It's a bird, it's a plane! IT'S QUBI!"}</Text>
         <View style={styles.widgetMockDots}>
           {['M', 'T', 'W', 'T', 'F'].map((d, idx) => (
             <View key={`${d}-${idx}`} style={styles.widgetMockDotCol}>
-              <Text style={styles.widgetMockDay}><Text>{d}</Text></Text>
-              <View style={[styles.widgetMockDot, idx < 3 && styles.widgetMockDotDone]}>
-                {idx < 3 ? <Text style={styles.widgetMockCheck}><Text>{'✓'}</Text></Text> : null}
+              <Text style={styles.widgetMockDay}>{d}</Text>
+              <View style={[styles.widgetMockDot, idx < 4 && styles.widgetMockDotDone]}>
+                {idx < 4 ? <Text style={styles.widgetMockCheck}>{'✓'}</Text> : null}
               </View>
             </View>
           ))}
         </View>
       </View>
-      {/* Right: mascot */}
-      <Text style={styles.widgetMockMascot}><Text>{'🦖'}</Text></Text>
+      <QubiMascot size={54} />
     </View>
   );
 }
 
-/** Slide 4 stat rows — exactly how to pin the widget on your phone */
-function WidgetSteps() {
-  const steps = [
-    { n: '1', text: 'Long-press your Home Screen' },
-    { n: '2', text: 'Tap +  and search “Qubi”' },
-    { n: '3', text: 'Pick a size → Add Widget 🔥' },
-  ];
-  return (
-    <View style={styles.statCard}>
-      {steps.map((s, idx) => (
-        <View key={s.n} style={[styles.widgetStepRow, idx < steps.length - 1 && styles.widgetStepDivider]}>
-          <View style={styles.widgetStepNum}><Text style={styles.widgetStepNumText}><Text>{s.n}</Text></Text></View>
-          <Text style={styles.widgetStepText}><Text>{s.text}</Text></Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-/** Slide 3 stat rows — leaderboard */
-function LeaderRows() {
-  return (
-    <View style={styles.statCard}>
-      {[
-        { medal: '🥇', name: 'Alex', xp: '1,250 XP' },
-        { medal: '🥈', name: 'You', xp: '1,180 XP' },
-        { medal: '🥉', name: 'Sam', xp: '1,090 XP' },
-      ].map((row) => (
-        <View key={row.name} style={[styles.leaderRow, row.name === 'Sam' ? null : styles.leaderDivider]}>
-          <Text style={{ fontSize: 16 }}><Text>{row.medal}</Text></Text>
-          <View style={{ width: 10 }} />
-          <Text style={styles.leaderName}><Text>{row.name}</Text></Text>
-          <View style={styles.statSpacer} />
-          <Text style={styles.leaderXp}><Text>{row.xp}</Text></Text>
-        </View>
-      ))}
-    </View>
-  );
-}
+/* ── Styles ──────────────────────────────────────────────────────────── */
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingBottom: 10 },
+  topBar: { flexDirection: 'row', alignItems: 'center', paddingBottom: 10, zIndex: 10 },
   progressRow: { flexDirection: 'row', gap: 8, flex: 1 },
-  progressSegment: {
-    height: 12,
-    borderRadius: 6,
-    flex: 1,
-    borderWidth: 2,
-    borderColor: '#000',
-  },
+  progressSegment: { height: 10, borderRadius: 5, flex: 1 },
   skipButton: {
     marginLeft: 12,
     paddingHorizontal: 14,
     paddingVertical: 6,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#000',
+    backgroundColor: 'rgba(255,255,255,0.22)',
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    shadowOffset: { width: 2, height: 2 },
-    elevation: 2,
   },
-  skipText: { fontSize: 14, fontFamily: fontFamilyFor('w800'), color: '#000' },
+  skipText: { fontSize: 14, fontFamily: fontFamilyFor('w700'), color: '#FFFFFF' },
   skipPlaceholder: { width: 12, marginLeft: 12 },
-  slide: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
-  guideCard: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    borderWidth: 2.5,
-    borderColor: '#000',
-    padding: 18,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    shadowOffset: { width: 4, height: 4 },
-    elevation: 4,
+  slide: { flex: 1, backgroundColor: '#F97316', alignItems: 'center' },
+  stageCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+
+  /* Slide 1 big % stat */
+  bigStat: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 2 },
+  bigStatText: {
+    fontSize: 120,
+    lineHeight: 128,
+    fontFamily: fontFamilyFor('w900'),
+    color: '#FFFFFF',
+    letterSpacing: -4,
+    textShadowColor: 'rgba(194,65,12,0.35)',
+    textShadowRadius: 22,
+    textShadowOffset: { width: 0, height: 6 },
   },
-  heroTile: {
-    width: '100%',
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#000',
-    backgroundColor: '#FFF7ED',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    overflow: 'hidden',
+  bigStatPct: { fontSize: 56 },
+  meadowWrap: { position: 'absolute', bottom: -6, width: 240, height: 60, alignItems: 'center' },
+  meadowIsland: {
+    width: 220, height: 46, borderRadius: 23, backgroundColor: '#58CC02',
+    borderWidth: 3, borderColor: '#46A302', overflow: 'hidden',
   },
-  accentPos: { position: 'absolute', top: 8, right: 10 },
-  flameBadge: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: '#F97316',
-    borderWidth: 2, borderColor: '#000',
-    alignItems: 'center', justifyContent: 'center',
+  meadowTop: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 26, paddingTop: 6 },
+  meadowTree: { width: 26, height: 34, borderRadius: 6, backgroundColor: '#2E7D0B' },
+
+  /* Slide 2 mascot face + wordmark */
+  faceWrap: { width: 210, height: 180, alignItems: 'center', justifyContent: 'center' },
+  eyeRow: { flexDirection: 'row', gap: 26, marginBottom: 16 },
+  eye: {
+    width: 44, height: 52, borderRadius: 22, backgroundColor: '#FFFFFF',
+    borderWidth: 4, borderColor: '#2E7D0B', alignItems: 'center', justifyContent: 'center',
   },
-  xpFloatChip: {
-    backgroundColor: '#58CC02', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999,
-    borderWidth: 2, borderColor: '#000',
+  pupil: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#1C1917' },
+  brow: {
+    position: 'absolute', width: 34, height: 9, borderRadius: 5, backgroundColor: '#2E7D0B',
   },
-  xpFloatText: { fontSize: 12, fontFamily: fontFamilyFor('w800'), color: '#FFFFFF' },
-  trophyFloatChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#FFFFFF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999,
-    borderWidth: 2, borderColor: '#000',
+  snout: { alignItems: 'center' },
+  nostril: {
+    width: 10, height: 8, borderRadius: 5, backgroundColor: '#2E7D0B', marginBottom: 8, alignSelf: 'center',
   },
-  trophyFloatText: { fontSize: 11, fontFamily: fontFamilyFor('w800'), color: AppColors.ink },
-  cardSpacer: { flex: 1, minHeight: 10 },
-  slideTitle: { fontSize: 22, fontFamily: fontFamilyFor('w900'), letterSpacing: -0.6, textAlign: 'center', color: '#000' },
-  slideDesc: { fontSize: 14, lineHeight: 21, fontFamily: fontFamilyFor('w500'), textAlign: 'center', color: '#3F3F46' },
-  loginLink: { paddingVertical: 4 },
-  loginLinkText: { fontSize: 13, fontFamily: fontFamilyFor('w700'), color: '#F97316' },
-  statCard: {
-    width: '100%', backgroundColor: '#FFF7ED', borderRadius: 16,
-    borderWidth: 2, borderColor: '#000', padding: 12, marginTop: 12,
+  mouth: {
+    width: 74, height: 40, backgroundColor: '#7C2D12', borderBottomLeftRadius: 37, borderBottomRightRadius: 37,
+    borderWidth: 3, borderTopWidth: 0, borderColor: '#2E7D0B', alignItems: 'center', overflow: 'hidden',
   },
+  tongue: { width: 34, height: 18, borderRadius: 9, backgroundColor: '#F472B6', marginTop: 18 },
+  spike: {
+    position: 'absolute', width: 26, height: 20, backgroundColor: '#2E7D0B',
+    borderBottomLeftRadius: 20, borderBottomRightRadius: 20,
+  },
+  wordmarkWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+  wordmark: {
+    fontSize: 42, fontFamily: fontFamilyFor('w900'), color: '#FFFFFF', letterSpacing: -1.2,
+    textShadowColor: 'rgba(0,0,0,0.15)', textShadowRadius: 10, textShadowOffset: { width: 0, height: 3 },
+  },
+  gardenWrap: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 70 },
+  flower: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+  flowerPetal: { position: 'absolute', width: 22, height: 22, borderRadius: 11, backgroundColor: '#FFC531' },
+  flowerCenter: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#7C2D12' },
+  grassBlade: { position: 'absolute', width: 8, height: 26, borderRadius: 4, backgroundColor: '#2E7D0B' },
+
+  /* Slide 3 legendary badge */
+  badgeWrap: { marginBottom: -26, zIndex: 2, alignItems: 'center', justifyContent: 'center' },
+  badgeGlow: {
+    position: 'absolute', width: 150, height: 150, borderRadius: 75, backgroundColor: 'rgba(255,197,49,0.35)',
+  },
+  badge: {
+    width: 76, height: 76, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
+    transform: [{ rotate: '45deg' }],
+    shadowColor: '#FFC531', shadowOpacity: 0.85, shadowRadius: 22, shadowOffset: { width: 0, height: 0 }, elevation: 10,
+  },
+  badgeInner: {
+    width: 54, height: 54, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: 'rgba(255,255,255,0.55)',
+  },
+  badgeCheck: { fontSize: 30, color: '#FFFFFF', fontFamily: fontFamilyFor('w900'), transform: [{ rotate: '-45deg' }] },
+  badgeSpark: {
+    position: 'absolute', width: 10, height: 10, borderRadius: 5, backgroundColor: '#FFC531',
+  },
+
+  /* Bottom copy + CTA */
+  bottomCopy: {
+    width: '100%', paddingHorizontal: 28, paddingBottom: 34, alignItems: 'center',
+  },
+  slideTitle: {
+    fontSize: 24, fontFamily: fontFamilyFor('w800'), letterSpacing: -0.5, textAlign: 'center', lineHeight: 30,
+  },
+  slideDesc: { fontSize: 14, lineHeight: 20, fontFamily: fontFamilyFor('w500'), textAlign: 'center' },
+  loginLink: { fontSize: 13, fontFamily: fontFamilyFor('w700'), color: '#F97316' },
+  ctaWrap: { width: '100%', position: 'relative', height: 56 },
+  ctaShadow: { position: 'absolute', top: 4, left: 0, right: 0, height: 52, borderRadius: 999 },
   ctaFront: {
-    height: 52, borderRadius: 16, backgroundColor: '#F97316',
-    borderWidth: 2.5, borderColor: '#000',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 1, shadowRadius: 0,
-    shadowOffset: { width: 0, height: 4 }, elevation: 4,
+    height: 52, borderRadius: 999, alignItems: 'center', justifyContent: 'center',
   },
-  ctaFrontText: { fontSize: 16, fontFamily: fontFamilyFor('w800'), color: '#FFFFFF', letterSpacing: -0.2 },
-  statRow: { flexDirection: 'row', alignItems: 'center' },
-  statSpacer: { flex: 1 },
-  statBig: { fontSize: 20, fontFamily: fontFamilyFor('w800'), color: '#000', letterSpacing: -0.4 },
-  statCaption: { fontSize: 11, fontFamily: fontFamilyFor('w600'), color: AppColors.muted },
-  flameDot: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: withAlpha('#F97316', 0.14),
-    borderWidth: 2, borderColor: '#000', alignItems: 'center', justifyContent: 'center',
-  },
-  goalChip: { backgroundColor: withAlpha('#58CC02', 0.16), paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 2, borderColor: '#000' },
-  goalChipText: { fontSize: 11, fontFamily: fontFamilyFor('w800'), color: '#3A7D00' },
-  barTrack: {
-    width: '100%', height: 16, borderRadius: 8, backgroundColor: '#FFFFFF',
-    borderWidth: 2, borderColor: '#000', overflow: 'hidden',
-  },
-  barFill: { height: '100%', backgroundColor: '#F97316', borderRadius: 6 },
-  rewardRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: withAlpha(AppColors.sky, 0.12), paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 2, borderColor: '#000' },
-  rewardText: { fontSize: 11, fontFamily: fontFamilyFor('w700'), color: AppColors.skyDeep },
-  leaderRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
-  leaderDivider: { borderBottomWidth: 1.5, borderBottomColor: '#00000022' },
-  leaderName: { fontSize: 14, fontFamily: fontFamilyFor('w700'), color: '#000' },
-  leaderXp: { fontSize: 12, fontFamily: fontFamilyFor('w800'), color: '#3A7D00' },
-  /* Slide 4 widget mock — mirrors widgets/QubiWidget.tsx */
+  ctaText: { fontSize: 15.5, fontFamily: fontFamilyFor('w800'), letterSpacing: 0.6 },
+
+  /* Slide 4 widget mock */
   widgetMock: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#F97316', borderRadius: 16, borderWidth: 2, borderColor: '#000',
-    paddingHorizontal: 14, paddingVertical: 10, alignSelf: 'stretch',
+    backgroundColor: '#F97316', borderRadius: 22,
+    paddingHorizontal: 16, paddingVertical: 14, alignSelf: 'stretch', marginHorizontal: 40,
+    shadowColor: '#C2410C', shadowOpacity: 0.35, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 8,
   },
   widgetMockHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  widgetMockStreak: { fontSize: 21, fontFamily: fontFamilyFor('w900'), color: '#FFFFFF', letterSpacing: -0.5 },
+  widgetMockStreak: { fontSize: 22, fontFamily: fontFamilyFor('w900'), color: '#FFFFFF', letterSpacing: -0.5 },
   widgetMockSub: { fontSize: 10, fontFamily: fontFamilyFor('w600'), color: 'rgba(255,255,255,0.9)', marginTop: 2 },
   widgetMockDots: { flexDirection: 'row', gap: 6, marginTop: 8 },
   widgetMockDotCol: { alignItems: 'center', gap: 2 },
@@ -455,15 +554,6 @@ const styles = StyleSheet.create({
   },
   widgetMockDotDone: { backgroundColor: '#FFFFFF' },
   widgetMockCheck: { fontSize: 10, fontFamily: fontFamilyFor('w800'), color: '#F97316' },
-  widgetMockMascot: { fontSize: 44, marginLeft: 8 },
-  widgetStepRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7 },
-  widgetStepDivider: { borderBottomWidth: 1.5, borderBottomColor: '#00000022' },
-  widgetStepNum: {
-    width: 26, height: 26, borderRadius: 13, backgroundColor: '#F97316',
-    borderWidth: 2, borderColor: '#000', alignItems: 'center', justifyContent: 'center', marginRight: 10,
-  },
-  widgetStepNumText: { fontSize: 13, fontFamily: fontFamilyFor('w800'), color: '#FFFFFF' },
-  widgetStepText: { fontSize: 13, fontFamily: fontFamilyFor('w600'), color: '#000' },
 });
 
 export default DuolingoGuide;

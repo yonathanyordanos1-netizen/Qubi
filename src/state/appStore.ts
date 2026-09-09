@@ -111,6 +111,12 @@ export interface AppShape {
   accountCreated: boolean;
   responses: Record<string, string>;
   memberSince: string | null;
+  /** True until the user has picked a name + username after a fresh sign-in. */
+  profileSetupPending: boolean;
+  /** Last time the display name was changed (ISO or null). */
+  nameChangedAt: string | null;
+  /** Last time the username was changed (ISO or null). */
+  usernameChangedAt: string | null;
 
   // ── Stats ────────────────────────────────────────────────────────────────
   xp: number;
@@ -150,6 +156,9 @@ export interface AppShape {
   refreshProfileStats: () => Promise<void>;
   setProfile: (opts: { name: string; username: string }) => Promise<string | null>;
   applyGoogleAuth: (opts: { name: string; email: string }) => void;
+  setAvatar: (avatar: string) => void;
+  /** Clears the identity-setup gate after the user confirms name/username. */
+  completeProfileSetup: () => void;
   createAccount: (opts: {
     name: string;
     username: string;
@@ -275,6 +284,9 @@ function serialize(s: AppShape): string {
     last_streak_date: s.lastStreakDate,
     member_since: s.memberSince,
     responses: s.responses,
+    profile_setup_pending: s.profileSetupPending,
+    name_changed_at: s.nameChangedAt,
+    username_changed_at: s.usernameChangedAt,
     custom_habits: s.customHabits.map(habitToJson),
     week_matrix: Object.fromEntries(
       Object.entries(s.weekMatrix).map(([k, v]) => [k, v.map((st) => st.valueOf())]),
@@ -304,6 +316,9 @@ function applyPersisted(json: Record<string, unknown>, base: AppShape): Partial<
   patch.streak = numOr(json['streak'], base.streak);
   patch.lastStreakDate = strOrNull(json['last_streak_date']);
   patch.memberSince = strOrNull(json['member_since']);
+  patch.profileSetupPending = boolOr(json['profile_setup_pending'], base.profileSetupPending);
+  patch.nameChangedAt = strOrNull(json['name_changed_at']);
+  patch.usernameChangedAt = strOrNull(json['username_changed_at']);
   if (isRecord(json['responses'])) {
     const responses: Record<string, string> = {};
     for (const [k, v] of Object.entries(json['responses'])) {
@@ -412,6 +427,9 @@ export const useAppStore = create<
     accountCreated: false,
     responses: {},
     memberSince: null,
+    profileSetupPending: false,
+    nameChangedAt: null,
+    usernameChangedAt: null,
 
     xp: 0,
     streak: 0,
@@ -471,6 +489,13 @@ export const useAppStore = create<
             }
             patch.responses = responses;
           }
+          // New social (Google/Apple) accounts land without a username — the
+          // app must show the one-time identity setup until they pick one.
+          patch.profileSetupPending = profile['profile_setup_done'] !== true;
+          const nameAt = profile['name_changed_at'];
+          patch.nameChangedAt = typeof nameAt === 'string' ? nameAt : get().nameChangedAt;
+          const usernameAt = profile['username_changed_at'];
+          patch.usernameChangedAt = typeof usernameAt === 'string' ? usernameAt : get().usernameChangedAt;
         }
         // Clear demo/seeded data before loading real Supabase data so the
         // matrix and chat only reflect what the user actually owns.
@@ -565,6 +590,27 @@ export const useAppStore = create<
       if (newUsername.length > 16) return 'Username must be 16 characters or fewer.';
       if (!/^[a-z0-9_]+$/.test(newUsername)) return 'Use only letters, numbers and underscores.';
 
+      // Signed-in → enforce uniqueness + cooldowns server-side through the RPC.
+      if (SupabaseServiceInstance.isSignedIn && SupabaseServiceInstance.isConfigured) {
+        const result = await SupabaseServiceInstance.updateProfileIdentity({
+          name: newName,
+          username: newUsername,
+          avatar: get().avatar,
+        });
+        if (!result.ok) return result.error ?? 'Could not save your profile.';
+        const s = get();
+        const nameChanged = newName !== s.displayName;
+        const usernameChanged = newUsername !== s.username;
+        set({
+          displayName: newName,
+          username: newUsername,
+          profileSetupPending: false,
+          nameChangedAt: nameChanged ? new Date().toISOString() : s.nameChangedAt,
+          usernameChangedAt: usernameChanged ? new Date().toISOString() : s.usernameChangedAt,
+        });
+        return null;
+      }
+
       const available = await SupabaseServiceInstance.usernameAvailable(newUsername);
       if (available === false) {
         return `\u201C${newUsername}\u201D is already taken — try another one.`;
@@ -573,9 +619,25 @@ export const useAppStore = create<
       set({
         displayName: newName.length === 0 ? get().displayName : newName,
         username: newUsername,
+        profileSetupPending: false,
       });
       void syncProfile(get());
       return null;
+    },
+
+    setAvatar(avatar) {
+      const safe = AVATAR_PALETTES[avatar] != null ? avatar : get().avatar;
+      set({ avatar: safe });
+      void syncProfile(get());
+    },
+
+    completeProfileSetup() {
+      set({
+        profileSetupPending: false,
+        onboardingDone: true,
+        accountCreated: true,
+      });
+      void syncProfile(get());
     },
 
     applyGoogleAuth({ name, email }) {
@@ -662,6 +724,9 @@ export const useAppStore = create<
         password: '',
         onboardingDone: false,
         accountCreated: false,
+        profileSetupPending: false,
+        nameChangedAt: null,
+        usernameChangedAt: null,
         xp: 0,
         streak: 0,
         lastStreakDate: null,
@@ -834,6 +899,7 @@ async function syncProfile(s: AppShape): Promise<void> {
     const payload: Record<string, unknown> = {
       onboarding_done: s.onboardingDone,
       responses: s.responses,
+      avatar: s.avatar,
     };
     if (s.displayName.trim().length > 0) payload.display_name = s.displayName;
     if (s.username.trim().length > 0) payload.username = s.username;
@@ -879,13 +945,13 @@ async function syncVerification(
   } catch {}
 }
 
-/** Mirrors live xp/streak/level + Mon–Fri verification to the Home Screen widget. */
+/** Mirrors live xp/streak/level + Mon–Sun verification to the Home Screen widget. */
 function pushStatsToWidget(s: AppShape): void {
   try {
     const today = todayIndexNow();
     const dayDone = (d: number): boolean =>
       Object.values(s.weekMatrix).some((days) => days[d] === QuestStatus.verified);
-    const week = [0, 1, 2, 3, 4].map(dayDone);
+    const week = [0, 1, 2, 3, 4, 5, 6].map(dayDone);
     void import('../services/widgetSyncService')
       .then((m) =>
         m
@@ -895,6 +961,9 @@ function pushStatsToWidget(s: AppShape): void {
             level: 1 + Math.floor(s.xp / 500),
             week,
             todayDone: dayDone(today),
+            questsDoneToday: Object.values(s.weekMatrix).filter(
+              (days) => days[today] === QuestStatus.verified,
+            ).length,
           })
           .catch(() => {}),
       )

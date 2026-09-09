@@ -65,7 +65,8 @@ export function CustomTabBar({ currentIndex, onSelect, onCameraPress }: CustomTa
   const { isDark } = useTheme();
   const native = useNativeGlass();
   const insets = useSafeAreaInsets();
-  const activeColor = isDark ? '#FFFFFF' : '#0F172A';
+  // Active tab ink = quest orange (Qubi brand), like Duolingo's green active tab.
+  const activeColor = isDark ? '#FB923C' : AppColors.primary;
   const inactiveColor = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(15,23,42,0.48)';
   const tier2 = glassTier('tier2', isDark);
   const blurTint: React.ComponentProps<typeof BlurView>['tint'] =
@@ -178,7 +179,7 @@ export function CustomTabBar({ currentIndex, onSelect, onCameraPress }: CustomTa
           <View style={styles.tabBarInner}>
             {currentIndex!==CENTER_INDEX ? (
               <Animated.View pointerEvents="none" style={[styles.indicator, indicatorStyle]}>
-                <View style={[StyleSheet.absoluteFill, { backgroundColor:'rgba(249,115,22,0.20)', borderRadius:24, borderWidth:1, borderColor:'rgba(249,115,22,0.25)' }]} />
+                <View style={[StyleSheet.absoluteFill, { backgroundColor:'rgba(249,115,22,0.16)', borderRadius:24, borderWidth:1.5, borderColor:'rgba(249,115,22,0.38)' }]} />
               </Animated.View>
             ) : null}
             <View style={styles.tabRow}>

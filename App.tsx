@@ -31,6 +31,7 @@ import QubiScreen from './src/screens/QubiScreen';
 import PhotoProofSheet, { QuickVerify } from './src/screens/PhotoProofSheet';
 import { LoginScreen } from './src/screens/auth/LoginScreen';
 import { VerifyOtpScreen } from './src/screens/auth/VerifyOtpScreen';
+import ProfileSetupScreen from './src/screens/ProfileSetupScreen';
 import type { Habit } from './src/types/models';
 
 // Keep the native (static) splash visible until our animated splash overlay
@@ -81,6 +82,7 @@ function Root() {
 
   const activeTab = useAppStore((s) => s.activeTab);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
+  const profileSetupPending = useAppStore((s) => s.profileSetupPending);
   // SPEC §1 — flow gates: persisted first-time-user flags from local storage
   const walkthroughDone = useGateStore((s) => s.walkthroughDone);
   const onboardingDone = useGateStore((s) => s.onboardingDone);
@@ -173,6 +175,15 @@ function Root() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Home Screen widgets: push an initial snapshot at every boot so freshly
+  // added widgets never sit empty/stale, and copy the mascot into the App
+  // Group as early as possible. No-ops in Expo Go.
+  useEffect(() => {
+    void import('./src/services/widgetSyncService')
+      .then((m) => m.restoreWidgetSnapshot())
+      .catch(() => {});
+  }, []);
+
   // Dismiss the splash overlay after the slide-up exit animation finishes (2.5s).
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -208,7 +219,12 @@ function Root() {
   // bump authTick and force a re-render → login screen, with no back-button escape.
   useEffect(() => {
     const unsub = SupabaseServiceInstance.onAuthState(() => {
-      setAuthTick((t) => t + 1);
+      // Re-hydrate on every session change so new identity fields (name/
+      // username/avatar + the setup-pending flag) come from the live row. This
+      // is what surfaces the identity gate right after a Google/Apple sign-in.
+      void useAppStore.getState().hydrateFromSupabase().then(() => {
+        setAuthTick((t) => t + 1);
+      });
     });
     return unsub;
   }, []);
@@ -295,6 +311,9 @@ function Root() {
             onVerified={async () => {
               setPendingOtpEmail(null);
               await markOnboardingComplete();
+              try {
+                await useAppStore.getState().hydrateFromSupabase();
+              } catch {}
               setAuthTick((t) => t + 1);
             }}
           />
@@ -311,6 +330,9 @@ function Root() {
             }}
             onLoginSuccess={async () => {
               await markOnboardingComplete();
+              try {
+                await useAppStore.getState().hydrateFromSupabase();
+              } catch {}
               setAuthTick((t) => t + 1);
             }}
             onOtpRequired={(email) => setPendingOtpEmail(email)}
@@ -324,6 +346,23 @@ function Root() {
     setProofHabit(null);
     setQuickVerify(false);
   };
+
+  // Identity gate: brand-new accounts (esp. Google/Apple) must pick a name +
+  // @username once after auth before reaching the dashboard. Returns false once
+  // saved (RPC clears profile_setup_done); skips on every re-sign-in.
+  if (!content && signedIn && profileSetupPending) {
+    content = (
+      <View style={[styles.flex, { backgroundColor: colors.canvas }, topInset(insets.top)]}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <ProfileSetupScreen
+          onComplete={() => {
+            useAppStore.getState().completeProfileSetup();
+            setAuthTick((t) => t + 1);
+          }}
+        />
+      </View>
+    );
+  }
 
   if (!content) {
     content = (

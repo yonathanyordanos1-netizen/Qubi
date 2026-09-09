@@ -84,7 +84,7 @@ export function TasksPage() {
               styles.manageBtn,
               {
                 backgroundColor: manageMode ? AppColors.primary : '#FFFFFF',
-                borderColor: '#000000',
+                borderColor: manageMode ? 'rgba(249,115,22,0.3)' : 'rgba(0,0,0,0.08)',
               },
             ]}
           >
@@ -254,7 +254,7 @@ function StickyMatrix({
     <View
       style={[
         styles.matrixCard,
-        { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#000000' },
+        { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : 'rgba(0,0,0,0.08)' },
       ]}
     >
       <View style={{ paddingHorizontal: 14, paddingTop: 14 }}>
@@ -271,7 +271,7 @@ function StickyMatrix({
                     style={[
                       styles.dayCircle,
                       i === todayIndex
-                        ? { backgroundColor: AppColors.primary, borderColor: '#000000' }
+                        ? { backgroundColor: AppColors.primary, borderColor: 'rgba(249,115,22,0.35)' }
                         : { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: '#E2E8F0' },
                     ]}
                   >
@@ -369,7 +369,7 @@ function DailyList({
                   styles.listRow,
                   {
                     backgroundColor: verified ? (isDark ? 'rgba(16,185,129,0.12)' : '#ECFDF5') : isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF',
-                    borderColor: isDark ? colors.glassEdge : '#000000',
+                    borderColor: isDark ? colors.glassEdge : 'rgba(0,0,0,0.08)',
                   },
                 ]}
               >
@@ -594,13 +594,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 13,
-    borderWidth: 2,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    shadowOffset: { width: 2, height: 2 },
+    shadowColor: '#B45309',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
 
@@ -614,11 +614,11 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     backgroundColor: AppColors.success,
     borderWidth: 2,
-    borderColor: '#000000',
-    shadowColor: '#000',
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    shadowOffset: { width: 2, height: 2 },
+    borderColor: 'rgba(16,185,129,0.35)',
+    shadowColor: '#10B981',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
   completedPillText: { fontSize: 12, lineHeight: 16, fontFamily: fontFamilyFor('w700'), color: '#FFFFFF' },
@@ -627,17 +627,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignSelf: 'center',
     borderRadius: 999,
-    padding: 3,
+    padding: 4,
     marginTop: 14,
     marginHorizontal: 20,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#000000',
-    shadowColor: '#000',
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    shadowOffset: { width: 2, height: 2 },
-    elevation: 2,
+    backgroundColor: 'rgba(249,115,22,0.08)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(249,115,22,0.25)',
   },
   viewTab: {
     flexDirection: 'row',
@@ -648,7 +643,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     minWidth: 92,
   },
-  viewTabActive: { backgroundColor: AppColors.primary },
+  viewTabActive: { backgroundColor: AppColors.primary, shadowColor: '#C2410C', shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   viewTabLabel: { fontSize: 12, lineHeight: 16, fontFamily: fontFamilyFor('w700') },
 
   matrixCard: {

@@ -23,9 +23,10 @@ export default function ProfileSetupScreen({ onComplete }: { onComplete: () => v
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const storeName = useAppStore((s) => s.displayName);
+  const storeUsername = useAppStore((s) => s.username);
 
   const [name, setName] = useState(storeName);
-  const [handle, setHandle] = useState('');
+  const [handle, setHandle] = useState(storeUsername.replace(/^@/, ''));
   const [handleState, setHandleState] = useState<HandleState>('idle');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -74,12 +75,16 @@ export default function ProfileSetupScreen({ onComplete }: { onComplete: () => v
     setBusy(true);
     setMessage(null);
     try {
-      const result = await SupabaseServiceInstance.upsertProfileStrict({ username: cleanHandle, display_name: name.trim() });
-      if (!result.ok) {
-        setMessage(result.error ?? 'Could not save your profile — try again.');
+      // setProfile routes to the server-enforced RPC when signed in (uniqueness
+      // + weekly/monthly cooldowns) and clears the identity gate on success.
+      const error = await useAppStore.getState().setProfile({
+        name: name.trim(),
+        username: cleanHandle,
+      });
+      if (error != null) {
+        setMessage(error);
         return;
       }
-      useAppStore.setState({ username: cleanHandle, displayName: name.trim() });
       onComplete();
     } catch {
       setMessage('Could not save your profile — try again.');

@@ -252,6 +252,7 @@ export default function QubiScreen({ onClose }: { onClose?: () => void }) {
         } finally {
           setStreaming(false);
           setStreamingText('');
+          setThinkingPrompt('');
           scrollToBottom();
         }
         return;
@@ -266,7 +267,12 @@ export default function QubiScreen({ onClose }: { onClose?: () => void }) {
         // includes the message added above (closure `chat` would omit it and
         // the model would never see the user's question).
         const messages = buildMessages(useAppStore.getState().chat);
-        const reply = await chatReply(messages);
+        const reply = await Promise.race([
+          chatReply(messages),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new AiHttpException(504, 'chat timed out')), 40_000),
+          ),
+        ]);
         // Lively typing effect into the thinking bubble, then commit.
         const token = ++typeToken.current;
         const full = reply.trim();

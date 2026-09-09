@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.qubi.app",
-      "buildNumber": "16",
+      "buildNumber": "17",
       "entitlements": {
         "com.apple.developer.healthkit": true,
         "com.apple.security.application-groups": ["group.com.qubi.app"]
@@ -57,7 +57,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#58CC02",
+          "backgroundColor": "#F97316",
           "image": "./assets/splash-icon.png",
           "imageWidth": 256,
           "resizeMode": "cover"
@@ -85,7 +85,7 @@
               "name": "QubiWidget",
               "displayName": "Qubi Streak",
               "description": "Your streak, XP level and Qubi's daily status at a glance.",
-              "supportedFamilies": ["systemSmall", "systemMedium"]
+              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"]
             }
           ]
         }
@@ -97,7 +97,7 @@
       },
       "EXPO_PUBLIC_SUPABASE_URL": "https://qnbrrxwctokuwxglcdjd.supabase.co",
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_qTECh9PHTWpUUUVZeSjoCw_k9vzYCaj",
-      "EXPO_PUBLIC_OPENROUTER_API_KEY": "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",
+      "EXPO_PUBLIC_OPENROUTER_MODEL": "nex-agi/nex-n2.5-mini:free",
       "EXPO_PUBLIC_OPENROUTER_VISION_MODEL": "google/gemma-4-26b-a4b-it:free"
     },
     "owner": "yonathan-tech"

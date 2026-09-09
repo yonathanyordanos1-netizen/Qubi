@@ -17,8 +17,7 @@ import Constants from 'expo-constants';
 const BUILTIN_FALLBACKS: Record<string, string> = {
   EXPO_PUBLIC_SUPABASE_URL: 'https://qnbrrxwctokuwxglcdjd.supabase.co',
   EXPO_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_qTECh9PHTWpUUUVZeSjoCw_k9vzYCaj',
-  EXPO_PUBLIC_OPENROUTER_API_KEY: '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',
-  EXPO_PUBLIC_OPENROUTER_MODEL: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+  EXPO_PUBLIC_OPENROUTER_MODEL: 'nex-agi/nex-n2.5-mini:free',
   EXPO_PUBLIC_OPENROUTER_VISION_MODEL: 'google/gemma-4-26b-a4b-it:free',
 };
 
@@ -78,12 +77,14 @@ export const Env = {
   get supabaseAnonKey(): string {
     return envValue('EXPO_PUBLIC_SUPABASE_ANON_KEY');
   },
-  /** Never empty in Release builds — falls back to the embedded project key. */
+  /** Injected by the bundler from the EXPO_PUBLIC_OPENROUTER_API_KEY build env
+   *  (set in .github/workflows/build-ipa.yml from the repo secret). Empty when
+   *  unconfigured — secret scanners block committing sk-or-v1- keys. */
   get openRouterKey(): string {
     return envValue('EXPO_PUBLIC_OPENROUTER_API_KEY');
   },
   get openRouterModel(): string {
-    return envValue('EXPO_PUBLIC_OPENROUTER_MODEL', 'nvidia/nemotron-3-ultra-550b-a55b:free');
+    return envValue('EXPO_PUBLIC_OPENROUTER_MODEL', 'nex-agi/nex-n2.5-mini:free');
   },
   get openRouterVisionModel(): string {
     return envValue('EXPO_PUBLIC_OPENROUTER_VISION_MODEL', 'google/gemma-4-26b-a4b-it:free');

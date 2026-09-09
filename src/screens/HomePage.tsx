@@ -216,16 +216,35 @@ export function HomePage() {
           }
         />
 
-        {/* ── Streak hero — the Duolingo widget, live in the app ── */}
+        {/* ── Streak hero — mirrors the live Home Screen widget states ── */}
         <View style={{ paddingHorizontal: 20, marginTop: 14 }}>
-          <View style={[styles.streakHero, streak >= 7 ? styles.streakHeroFire : streak === 0 ? styles.streakHeroPurple : styles.streakHeroBlue]}>
+          <View
+            style={[
+              styles.streakHero,
+              streak === 0
+                ? styles.streakHeroPurple
+                : verifiedToday === 0
+                  ? styles.streakHeroRisk
+                  : streak >= 7
+                    ? styles.streakHeroFire
+                    : styles.streakHeroBlue,
+            ]}
+          >
             <View style={styles.streakHeroLeft}>
               <View style={styles.streakHeadRow}>
                 <Text style={{ fontSize: 22 }}><Text>{'🔥'}</Text></Text>
                 <Text style={styles.streakHeadDays}><Text>{`${streak} ${streak === 1 ? 'Day' : 'Days'}`}</Text></Text>
               </View>
               <Text style={styles.streakHeadStatus}>
-                <Text>{streak === 0 ? 'Let\u2019s flex that brain!' : streak < 7 ? 'Building the habit!' : 'It\u2019s a bird, it\u2019s a plane!'}</Text>
+                <Text>
+                  {streak === 0
+                    ? 'Let\u2019s flex that brain!'
+                    : verifiedToday === 0
+                      ? 'Houston, we have a problem!'
+                      : streak < 7
+                        ? 'Building the habit!'
+                        : 'It\u2019s a bird, it\u2019s a plane! IT\u2019S QUBI!'}
+                </Text>
               </Text>
               <View style={{ height: 12 }} />
               <WeekChain week={weekChain} todayIdx={4} />
@@ -437,6 +456,7 @@ const styles = StyleSheet.create({
   streakHeroFire: { backgroundColor: '#F97316' },
   streakHeroBlue: { backgroundColor: '#1CB0F6' },
   streakHeroPurple: { backgroundColor: '#8B5CF6' },
+  streakHeroRisk: { backgroundColor: '#B91C1C' },
   streakHeroLeft: { flex: 1 },
   streakHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   streakHeadDays: { fontSize: 26, fontFamily: fontFamilyFor('w900'), color: '#FFFFFF', letterSpacing: -0.8 },
