@@ -14,7 +14,6 @@ import { AppColors, withAlpha } from '../theme/colors';
 import { fontFamilyFor } from '../theme/typography';
 import { useTheme } from '../theme/ThemeProvider';
 import { StrokeIcon } from '../components/AppIcons';
-import { LiveActivityToast } from '../components/LiveActivityToast';
 import {
   RankTier,
   RANK_TIERS,
@@ -30,7 +29,6 @@ import {
 } from '../services/rankService';
 import {
   mergedLeaderboard,
-  selectRecentActivity,
   useStatsStore,
 } from '../state/statsStore';
 import { selectInitials, useAppStore } from '../state/appStore';
@@ -53,7 +51,6 @@ export function RanksPage() {
   const displayName = useAppStore((s) => s.displayName);
   const initials = useAppStore(selectInitials);
 
-  const activity = useStatsStore(selectRecentActivity);
   const statsState = useStatsStore((s) => s);
 
   const completions = userXp > 0 ? 1 : 0;
@@ -143,13 +140,6 @@ export function RanksPage() {
           </Text>
         </View>
       </View>
-
-      {/* ── Live activity toast ── */}
-      {activity.length > 0 && (
-        <View style={{ marginBottom: 12 }}>
-          <LiveActivityToast events={activity} />
-        </View>
-      )}
 
       {/* ── All ranks ladder ── */}
       <Text style={[styles.sectionTitle, { color: colors.ink }]}>All Ranks</Text>

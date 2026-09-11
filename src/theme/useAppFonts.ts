@@ -1,37 +1,39 @@
+import { useFonts } from '@expo-google-fonts/poppins';
 import {
-  useFonts,
-  Poppins_400Regular,
-  Poppins_500Medium,
-  Poppins_600SemiBold,
-  Poppins_700Bold,
-  Poppins_800ExtraBold,
-  Poppins_900Black,
-} from '@expo-google-fonts/poppins';
+  Fredoka_400Regular,
+  Fredoka_500Medium,
+  Fredoka_600SemiBold,
+  Fredoka_700Bold,
+} from '@expo-google-fonts/fredoka';
 import {
-  SpaceGrotesk_400Regular,
-  SpaceGrotesk_500Medium,
-  SpaceGrotesk_600SemiBold,
-  SpaceGrotesk_700Bold,
-} from '@expo-google-fonts/space-grotesk';
+  Nunito_400Regular,
+  Nunito_500Medium,
+  Nunito_600SemiBold,
+  Nunito_700Bold,
+  Nunito_800ExtraBold,
+} from '@expo-google-fonts/nunito';
 
 /**
  * Loads the app's typefaces once at boot:
- *  - Poppins       → display / headings / titles
- *  - Space Grotesk → body copy, labels, numbers (free stand-in for Europa Grotesk)
+ *  - Fredoka → display / headings / titles / big numerals (rounded, Duolingo-feel)
+ *  - Nunito  → body copy, labels, secondary numbers (warm, highly legible)
+ *
+ * The whole app routes text through `fontFamilyFor()` (see typography.ts), so
+ * swapping the families here restyles every screen at once. Poppins/Space Grotesk
+ * are no longer loaded — nothing references their families directly.
  * Returns true when every family is ready.
  */
 export function useAppFonts(): boolean {
   const [loaded] = useFonts({
-    Poppins_400Regular,
-    Poppins_500Medium,
-    Poppins_600SemiBold,
-    Poppins_700Bold,
-    Poppins_800ExtraBold,
-    Poppins_900Black,
-    SpaceGrotesk_400Regular,
-    SpaceGrotesk_500Medium,
-    SpaceGrotesk_600SemiBold,
-    SpaceGrotesk_700Bold,
+    Fredoka_400Regular,
+    Fredoka_500Medium,
+    Fredoka_600SemiBold,
+    Fredoka_700Bold,
+    Nunito_400Regular,
+    Nunito_500Medium,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+    Nunito_800ExtraBold,
   });
   return loaded;
 }

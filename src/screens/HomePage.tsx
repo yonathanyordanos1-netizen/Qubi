@@ -35,6 +35,14 @@ const QUEST_XP = 50;
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
+/** Mood-driven gradient for the streak hero — mirrors the widget's four states. */
+function streakHeroGradient(streak: number, verifiedToday: number): [string, string] {
+  if (streak === 0) return ['#B48BFF', '#7A43E6']; // purple — fresh start
+  if (verifiedToday === 0) return ['#FF7A7A', '#C42020']; // red — at risk
+  if (streak >= 7) return ['#FFA45C', '#E0570A']; // orange — on fire
+  return ['#5FCEFF', '#1093D4']; // sky — building
+}
+
 /* ── Duolingo week chain — connected ✓ coins for Mo–Fr ────────────────────── */
 
 function WeekChain({ week, todayIdx }: { week: boolean[]; todayIdx: number }) {
@@ -115,7 +123,7 @@ function DuoCard({ children, style, isDark, glassEdge, pad = 16 }: { children: R
     <View
       style={[
         styles.duoCard,
-        { padding: pad, borderColor: isDark ? 'rgba(255,255,255,0.10)' : '#E5E5E5', backgroundColor: isDark ? '#171310' : '#FFFFFF' },
+        { padding: pad, borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.9)', backgroundColor: isDark ? '#1E1712' : '#FFFFFF' },
         style,
       ]}
     >
@@ -217,19 +225,13 @@ export function HomePage() {
           }
         />
 
-        {/* ── Streak hero — mirrors the live Home Screen widget states ── */}
+        {/* ── Streak hero — gradient claymorphism card mirroring the widget states ── */}
         <View style={{ paddingHorizontal: 20, marginTop: 14 }}>
-          <View
-            style={[
-              styles.streakHero,
-              streak === 0
-                ? styles.streakHeroPurple
-                : verifiedToday === 0
-                  ? styles.streakHeroRisk
-                  : streak >= 7
-                    ? styles.streakHeroFire
-                    : styles.streakHeroBlue,
-            ]}
+          <LinearGradient
+            colors={streakHeroGradient(streak, verifiedToday)}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.95, y: 1 }}
+            style={styles.streakHero}
           >
             <View style={styles.streakHeroLeft}>
               <View style={styles.streakHeadRow}>
@@ -253,7 +255,7 @@ export function HomePage() {
             <View style={styles.streakHeroMascot}>
               <QubiMascot size={72} celebrating={verifiedToday > 0} bob />
             </View>
-          </View>
+          </LinearGradient>
         </View>
 
         {/* ── Daily Goal Ring — bold circular XP ── */}
@@ -428,16 +430,13 @@ const styles = StyleSheet.create({
   badge: { position: 'absolute', top: -5, right: -4, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: '#EF4444', paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FFF' },
   badgeText: { color: '#FFF', fontSize: 10, fontFamily: fontFamilyFor('w800') },
 
-  /* Streak hero — Duolingo widget card: vibrant fill + darker bottom lip (no black border) */
+  /* Streak hero — gradient claymorphism: big radius, warm diffuse shadow, top rim */
   streakHero: {
     flexDirection: 'row', alignItems: 'center',
-    borderRadius: 26, padding: 18, borderBottomWidth: 6,
-    shadowColor: '#5B3A1A', shadowOpacity: 0.12, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 4,
+    borderRadius: 32, padding: 20,
+    borderTopWidth: 1.5, borderTopColor: 'rgba(255,255,255,0.35)',
+    shadowColor: '#6B3E12', shadowOpacity: 0.22, shadowRadius: 20, shadowOffset: { width: 0, height: 12 }, elevation: 8,
   },
-  streakHeroFire: { backgroundColor: '#F97316', borderColor: '#C2410C' },
-  streakHeroBlue: { backgroundColor: '#1CB0F6', borderColor: '#1899D6' },
-  streakHeroPurple: { backgroundColor: '#8B5CF6', borderColor: '#7C3AED' },
-  streakHeroRisk: { backgroundColor: '#E23B3B', borderColor: '#B91C1C' },
   streakHeroLeft: { flex: 1 },
   streakHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   streakHeadDays: { fontSize: 26, fontFamily: fontFamilyFor('w900'), color: '#FFFFFF', letterSpacing: -0.8 },
@@ -485,10 +484,10 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginTop: 22, marginBottom: 10 },
   sectionTitle: { fontSize: 18, fontFamily: fontFamilyFor('w800'), letterSpacing: -0.3 },
 
-  /* Chunky card + button primitives — clean Duolingo card: soft border + bottom lip */
+  /* Claymorphism card — soft inflated: big radius, warm diffuse shadow, top rim highlight */
   duoCard: {
-    borderRadius: 22, borderWidth: 2, borderBottomWidth: 4,
-    shadowColor: '#5B3A1A', shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 1,
+    borderRadius: 28, borderTopWidth: 1.5,
+    shadowColor: '#6B3E12', shadowOpacity: 0.10, shadowRadius: 18, shadowOffset: { width: 0, height: 9 }, elevation: 4,
   },
   chunkyBtnShadow: { borderRadius: 16, overflow: 'hidden' },
   chunkyBtnFront: { height: 50, borderRadius: 16, marginBottom: 4, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },

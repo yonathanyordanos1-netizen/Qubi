@@ -184,6 +184,24 @@ function Root() {
       .catch(() => {});
   }, []);
 
+  // iOS Home Screen Quick Actions (long-press the app icon): register the two
+  // shortcuts and route their taps into the right UI. No-op in Expo Go / Android.
+  useEffect(() => {
+    let unsub: (() => void) | null = null;
+    void import('./src/services/quickActionsService').then((m) => {
+      void m.registerQuickActions();
+      unsub = m.subscribeQuickActions((id) => {
+        if (id === 'snap_proof') {
+          setProofHabit(null);
+          setQuickVerify(true);
+        } else if (id === 'view_stats') {
+          setActiveTab(3); // Ranks tab
+        }
+      });
+    }).catch(() => {});
+    return () => { if (unsub != null) unsub(); };
+  }, [setActiveTab]);
+
   // Dismiss the splash overlay after the slide-up exit animation finishes (2.5s).
   useEffect(() => {
     const timer = setTimeout(() => {

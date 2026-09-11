@@ -6,13 +6,18 @@ import { AppColors } from './colors';
  * Loaded at boot via useAppFonts — see src/theme/useAppFonts.ts.
  */
 
+/**
+ * Weight → family map. Display weights (w700+) use Fredoka (rounded, playful);
+ * body/label weights use Nunito (warm, legible). Fredoka tops out at 700 Bold —
+ * its rounded heft reads bolder than its numeric weight, so it covers w800/w900.
+ */
 const F = {
-  w400: 'SpaceGrotesk_400Regular',
-  w500: 'SpaceGrotesk_500Medium',
-  w600: 'SpaceGrotesk_600SemiBold',
-  w700: 'Poppins_700Bold',
-  w800: 'Poppins_800ExtraBold',
-  w900: 'Poppins_900Black',
+  w400: 'Nunito_400Regular',
+  w500: 'Nunito_500Medium',
+  w600: 'Nunito_700Bold',
+  w700: 'Fredoka_600SemiBold',
+  w800: 'Fredoka_700Bold',
+  w900: 'Fredoka_700Bold',
 } as const;
 
 export type FontWeight = keyof typeof F;
