@@ -110,11 +110,12 @@ function FloatingXp({ visible }: { visible: boolean }) {
 /* ── Chunky Duolingo card primitives ──────────────────────────────────────── */
 
 function DuoCard({ children, style, isDark, glassEdge, pad = 16 }: { children: React.ReactNode; style?: object; isDark: boolean; glassEdge: string; pad?: number }) {
+  void glassEdge;
   return (
     <View
       style={[
         styles.duoCard,
-        { padding: pad, borderColor: isDark ? glassEdge : '#000000', backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF' },
+        { padding: pad, borderColor: isDark ? 'rgba(255,255,255,0.10)' : '#E5E5E5', backgroundColor: isDark ? '#171310' : '#FFFFFF' },
         style,
       ]}
     >
@@ -334,26 +335,6 @@ export function HomePage() {
           )}
         </View>
 
-        {/* ── Daily Goal bar — chunky Duolingo progress ── */}
-        {habits.length > 0 ? (
-          <View style={{ paddingHorizontal: 20, marginTop: 14 }}>
-            <DuoCard isDark={isDark} glassEdge={colors.glassEdge}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontFamily: fontFamilyFor('w800'), fontSize: 15, color: colors.ink }}><Text>Daily Goal</Text></Text>
-                <View style={styles.flex1} />
-                <View style={styles.goalChip}><Text style={styles.goalChipText}><Text>{`+${QUEST_XP} XP per quest`}</Text></Text></View>
-              </View>
-              <View style={{ height: 16 }} />
-              <View style={styles.barTrack}>
-                <View style={[styles.barFill, { width: `${Math.round(progress * 100)}%` }]} />
-                <View style={[styles.barGloss, { width: `${Math.round(progress * 100)}%` }]} />
-              </View>
-              <View style={{ height: 8 }} />
-              <Text style={{ fontFamily: fontFamilyFor('w600'), fontSize: 11, color: colors.muted }}><Text>{`${todayXp} / ${dailyGoalXp} XP earned today`}</Text></Text>
-            </DuoCard>
-          </View>
-        ) : null}
-
         {/* ── This Week — XP bars ── */}
         <View style={{ paddingHorizontal: 20, marginTop: 14 }}>
           <DuoCard isDark={isDark} glassEdge={colors.glassEdge}>
@@ -443,20 +424,20 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
 
   /* Header extras */
-  friendsLauncher: { width: 42, height: 42, borderRadius: 21, borderWidth: 2, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 1, shadowRadius: 0, shadowOffset: { width: 2, height: 2 }, elevation: 3 },
+  friendsLauncher: { width: 42, height: 42, borderRadius: 21, borderWidth: 2, borderBottomWidth: 3, alignItems: 'center', justifyContent: 'center', shadowColor: '#5B3A1A', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
   badge: { position: 'absolute', top: -5, right: -4, minWidth: 18, height: 18, borderRadius: 9, backgroundColor: '#EF4444', paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FFF' },
   badgeText: { color: '#FFF', fontSize: 10, fontFamily: fontFamilyFor('w800') },
 
-  /* Streak hero — Duolingo widget card */
+  /* Streak hero — Duolingo widget card: vibrant fill + darker bottom lip (no black border) */
   streakHero: {
     flexDirection: 'row', alignItems: 'center',
-    borderRadius: 24, padding: 18, borderWidth: 2.5, borderColor: '#000000',
-    shadowColor: '#000', shadowOpacity: 1, shadowRadius: 0, shadowOffset: { width: 4, height: 4 }, elevation: 5,
+    borderRadius: 26, padding: 18, borderBottomWidth: 6,
+    shadowColor: '#5B3A1A', shadowOpacity: 0.12, shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 4,
   },
-  streakHeroFire: { backgroundColor: '#F97316' },
-  streakHeroBlue: { backgroundColor: '#1CB0F6' },
-  streakHeroPurple: { backgroundColor: '#8B5CF6' },
-  streakHeroRisk: { backgroundColor: '#B91C1C' },
+  streakHeroFire: { backgroundColor: '#F97316', borderColor: '#C2410C' },
+  streakHeroBlue: { backgroundColor: '#1CB0F6', borderColor: '#1899D6' },
+  streakHeroPurple: { backgroundColor: '#8B5CF6', borderColor: '#7C3AED' },
+  streakHeroRisk: { backgroundColor: '#E23B3B', borderColor: '#B91C1C' },
   streakHeroLeft: { flex: 1 },
   streakHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   streakHeadDays: { fontSize: 26, fontFamily: fontFamilyFor('w900'), color: '#FFFFFF', letterSpacing: -0.8 },
@@ -486,9 +467,9 @@ const styles = StyleSheet.create({
   miniStat: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1.5 },
 
   /* Pills & chips */
-  xpPillOrange: { backgroundColor: AppColors.primary, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 2, borderColor: isDarkSafe() ? 'transparent' : '#000000' },
+  xpPillOrange: { backgroundColor: AppColors.primary, paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999, borderBottomWidth: 3, borderColor: '#C2410C' },
   xpPillOrangeText: { fontFamily: fontFamilyFor('w800'), fontSize: 11, color: '#FFF' },
-  schedulePill: { backgroundColor: AppColors.ink, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 2, borderColor: 'transparent' },
+  schedulePill: { backgroundColor: AppColors.primary, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 999, borderBottomWidth: 3, borderColor: '#C2410C' },
   schedulePillText: { fontFamily: fontFamilyFor('w700'), fontSize: 11, color: '#FFF' },
   goalChip: { backgroundColor: withAlpha(AppColors.pathGreen, 0.14), paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
   goalChipText: { fontFamily: fontFamilyFor('w800'), fontSize: 11, color: AppColors.pathGreenDeep },
@@ -504,10 +485,10 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginTop: 22, marginBottom: 10 },
   sectionTitle: { fontSize: 18, fontFamily: fontFamilyFor('w800'), letterSpacing: -0.3 },
 
-  /* Chunky card + button primitives */
+  /* Chunky card + button primitives — clean Duolingo card: soft border + bottom lip */
   duoCard: {
-    borderRadius: 22, borderWidth: 2.5,
-    shadowColor: '#000', shadowOpacity: 1, shadowRadius: 0, shadowOffset: { width: 3, height: 3 }, elevation: 4,
+    borderRadius: 22, borderWidth: 2, borderBottomWidth: 4,
+    shadowColor: '#5B3A1A', shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 1,
   },
   chunkyBtnShadow: { borderRadius: 16, overflow: 'hidden' },
   chunkyBtnFront: { height: 50, borderRadius: 16, marginBottom: 4, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
@@ -521,7 +502,7 @@ const styles = StyleSheet.create({
 export function PrimaryPillButton({ label, onPress }: { label: string; onPress?: () => void }) {
   return (
     <Pressable onTap={onPress} scale={0.97}>
-      <View style={{ backgroundColor: AppColors.primary, paddingHorizontal: 18, paddingVertical: 12, borderRadius: 999, borderWidth: 2, borderColor: '#000000', alignItems: 'center', shadowColor: '#000', shadowOpacity: 1, shadowRadius: 0, shadowOffset: { width: 2, height: 2 }, elevation: 3 }}>
+      <View style={{ backgroundColor: AppColors.primary, paddingHorizontal: 20, paddingVertical: 13, borderRadius: 999, borderBottomWidth: 4, borderColor: '#C2410C', alignItems: 'center' }}>
         <Text style={{ fontFamily: fontFamilyFor('w800'), color: '#FFF' }}><Text>{label}</Text></Text>
       </View>
     </Pressable>

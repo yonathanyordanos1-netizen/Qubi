@@ -118,13 +118,18 @@ const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 const APP_URL = 'https://Qubi.app';
 const APP_TITLE = 'Qubi';
 
+/* Live-benched 2026-09-09 (shipped key, auth 200):
+ * nex-mini ~1.8s OK -> nemotron-super ~1.4s OK -> nemotron-lightning ~2.8s OK
+ * -> nex-pro ~2.6s OK. Gemma :free pair 429 rate-limited upstream (kept as
+ * late fallbacks). Ultra-550B stalls >30s -> dropped from chain entirely.
+ * Every ID below confirmed present on /models. */
 const FALLBACK_CHAT_MODELS = [
   'nex-agi/nex-n2.5-mini:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'nvidia/nemotron-3.5-lightning:free',
+  'nex-agi/nex-n2.5-pro:free',
   'google/gemma-4-31b-it:free',
   'google/gemma-4-26b-a4b-it:free',
-  'nvidia/nemotron-3.5-lightning:free',
-  'nvidia/nemotron-3-super-120b-a12b:free',
-  'openrouter/free',
 ];
 const FALLBACK_VISION_MODELS = [
   'google/gemma-4-26b-a4b-it:free',

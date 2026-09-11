@@ -102,19 +102,29 @@ async function ensureMascotInAppGroup(): Promise<string | null> {
     const widgetsDirectory = safeWidgetsDirectory();
     if (widgetsDirectory == null) return null;
 
-    // The directory constant is a URL string ("file:///.../ExpoWidgets/").
-    const dirPath = widgetsDirectory.replace(/\/?$/, '/');
-    const targetUri = `${dirPath}qubi-mascot.png`;
-
-    const copied = await AsyncStorage.getItem(MASCOT_COPIED_KEY);
-    if (copied === '1') return targetUri;
-
-    // Legacy API surface (expo-file-system classic) — guarded so SDK variant
-    // differences degrade gracefully instead of throwing.
-    const FileSystem = require('expo-file-system') as {
-      copyAsync: (opts: { from: string; to: string }) => Promise<void>;
-      makeDirectoryAsync: (path: string, opts?: { intermediates?: boolean }) => Promise<void>;
+    // expo-file-system SDK 57 removed the legacy `copyAsync`/`makeDirectoryAsync`
+    // free functions (they now throw at runtime). Use the object-oriented
+    // `File` / `Directory` API instead — otherwise the copy silently fails and
+    // the widget falls back to the 🦖 emoji forever.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { File, Directory } = require('expo-file-system') as {
+      File: new (...uris: (string | object)[]) => { uri: string; exists: boolean; copy: (dest: object) => Promise<void> };
+      Directory: new (...uris: (string | object)[]) => { uri: string; exists: boolean; create: (opts?: { intermediates?: boolean; idempotent?: boolean }) => void };
     };
+
+    const dir = new Directory(widgetsDirectory);
+    const target = new File(dir, 'qubi-mascot.png');
+
+    // Fast path: already copied on a previous launch.
+    if (target.exists) {
+      await AsyncStorage.setItem(MASCOT_COPIED_KEY, '1').catch(() => {});
+      return target.uri;
+    }
+
+    // Ensure the shared App Group directory exists (idempotent — never throws
+    // if WidgetKit already created it).
+    if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
+
     const { Asset } = require('expo-asset') as {
       Asset: { fromModule: (id: number) => { downloadAsync: () => Promise<{ localUri: string | null; uri: string }> } };
     };
@@ -123,11 +133,12 @@ async function ensureMascotInAppGroup(): Promise<string | null> {
     const asset = Asset.fromModule(assetModuleId);
     const local = await asset.downloadAsync();
     const srcUri = local.localUri ?? local.uri;
+    if (srcUri == null || srcUri.length === 0) return null;
 
-    await FileSystem.makeDirectoryAsync(dirPath, { intermediates: true }).catch(() => {});
-    await FileSystem.copyAsync({ from: srcUri, to: targetUri });
-    await AsyncStorage.setItem(MASCOT_COPIED_KEY, '1');
-    return targetUri;
+    const src = new File(srcUri);
+    await src.copy(target);
+    await AsyncStorage.setItem(MASCOT_COPIED_KEY, '1').catch(() => {});
+    return target.exists ? target.uri : null;
   } catch {
     return null;
   }

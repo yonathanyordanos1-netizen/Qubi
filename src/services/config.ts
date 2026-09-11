@@ -49,9 +49,9 @@ export const AppConfig = {
     );
   },
 
-  /** True when a real OpenRouter key is present (sk-or-v1- + hex suffix). */
+  /** True when a real OpenRouter key is present (sk-or-v1- prefix + long suffix). */
   get aiConfigured(): boolean {
-    return /^sk-or-v1-[a-f0-9]{20,}$/.test(this.openRouterKey);
+    return /^sk-or-v1-[A-Za-z0-9_-]{20,}$/.test(this.openRouterKey.trim());
   },
 } as const;
 
