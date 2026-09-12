@@ -49,7 +49,7 @@ function FloatingCamera() {
     return () => loop.stop();
   }, [rotate]);
   return (
-    <Animated.View style={[{ width: 80, height: 80, borderRadius: 24, backgroundColor: AppColors.primary, alignItems:'center', justifyContent:'center', borderWidth: 2, borderColor: '#E5E5E5', shadowColor: '#5B3A1A', shadowOpacity: 0.07, shadowRadius: 10, shadowOffset: { width: 4, height: 4 }, elevation: 0 }, { transform: [{ rotate: rotate.interpolate({ inputRange: [0, 8], outputRange: ['-4deg', '4deg'] }) }] }]}>
+    <Animated.View style={[{ width: 80, height: 80, borderRadius: 24, backgroundColor: AppColors.primary, alignItems:'center', justifyContent:'center', borderWidth: 2, borderColor: '#F0E2CE', shadowColor: '#6B3E12', shadowOpacity: 0.10, shadowRadius: 18, shadowOffset: { width: 4, height: 4 }, elevation: 0 }, { transform: [{ rotate: rotate.interpolate({ inputRange: [0, 8], outputRange: ['-4deg', '4deg'] }) }] }]}>
       <Ionicons name="camera" size={36} color="#FFFFFF" />
     </Animated.View>
   );
@@ -69,7 +69,7 @@ function XpChip({ label, color, delay = 0 }: { label: string; color: string; del
     }).start();
   }, [chipScale, delay]);
   return (
-    <Animated.View style={[{ backgroundColor:'#FFFFFF', paddingHorizontal:12, paddingVertical:8, borderRadius:16, borderWidth:2, borderColor: '#E5E5E5', alignItems:'center', shadowColor: '#5B3A1A', shadowOpacity: 0.07, shadowRadius: 10, shadowOffset:{width:2.5,height:2.5}, elevation:0 }, { transform: [{ scale: chipScale }] }]}>
+    <Animated.View style={[{ backgroundColor:'#FFFFFF', paddingHorizontal:12, paddingVertical:8, borderRadius:16, borderWidth:2, borderColor: '#F0E2CE', alignItems:'center', shadowColor: '#6B3E12', shadowOpacity: 0.10, shadowRadius: 18, shadowOffset:{width:2.5,height:2.5}, elevation:0 }, { transform: [{ scale: chipScale }] }]}>
       <Text style={{ fontFamily: fontFamilyFor('w800'), fontSize:16, color }}><Text>{label}</Text></Text>
     </Animated.View>
   );
@@ -83,10 +83,10 @@ const SLIDES: Slide[] = [
     accent: AppColors.primary,
     render: (
       <View style={{ alignItems:'center' }}>
-        <View style={{ width: HERO, height: HERO, borderRadius: 20, backgroundColor: withAlpha(AppColors.primary,0.12), alignItems:'center', justifyContent:'center', borderWidth:2, borderColor: '#E5E5E5', overflow:'hidden', shadowColor: '#5B3A1A', shadowOpacity: 0.07, shadowRadius: 10, shadowOffset:{width:4,height:4}, elevation:0 }}>
+        <View style={{ width: HERO, height: HERO, borderRadius: 20, backgroundColor: withAlpha(AppColors.primary,0.12), alignItems:'center', justifyContent:'center', borderWidth:2, borderColor: '#F0E2CE', overflow:'hidden', shadowColor: '#6B3E12', shadowOpacity: 0.10, shadowRadius: 18, shadowOffset:{width:4,height:4}, elevation:0 }}>
           <QubiAvatar size={HERO - 24} glow accessibilityLabel="Qubi mascot" />
         </View>
-        <View style={{ position:'absolute', top: -8, alignSelf:'center', backgroundColor:'#FFFFFF', paddingHorizontal:10, paddingVertical:6, borderRadius:999, borderWidth:2, borderColor: '#E5E5E5' }}>
+        <View style={{ position:'absolute', top: -8, alignSelf:'center', backgroundColor:'#FFFFFF', paddingHorizontal:10, paddingVertical:6, borderRadius:999, borderWidth:2, borderColor: '#F0E2CE' }}>
           <Text style={{ fontFamily: fontFamilyFor('w800'), fontSize:11, color:AppColors.ink }}><Text>{'✓ Morning Quest'}</Text></Text>
         </View>
       </View>
@@ -99,9 +99,9 @@ const SLIDES: Slide[] = [
     accent: AppColors.sky,
     render: (
       <View style={{ alignItems:'center' }}>
-        <View style={{ width: HERO, height: HERO, borderRadius: 20, backgroundColor: withAlpha(AppColors.sky,0.14), alignItems:'center', justifyContent:'center', borderWidth:2, borderColor: '#E5E5E5', overflow:'hidden', shadowColor: '#5B3A1A', shadowOpacity: 0.07, shadowRadius: 10, shadowOffset:{width:4,height:4}, elevation:0 }}>
+        <View style={{ width: HERO, height: HERO, borderRadius: 20, backgroundColor: withAlpha(AppColors.sky,0.14), alignItems:'center', justifyContent:'center', borderWidth:2, borderColor: '#F0E2CE', overflow:'hidden', shadowColor: '#6B3E12', shadowOpacity: 0.10, shadowRadius: 18, shadowOffset:{width:4,height:4}, elevation:0 }}>
           <FloatingCamera />
-          <View style={{ position:'absolute', bottom: 14, right: 14, width: 38, height:38, borderRadius:19, backgroundColor: AppColors.success, alignItems:'center', justifyContent:'center', borderWidth:2, borderColor: '#E5E5E5' }}>
+          <View style={{ position:'absolute', bottom: 14, right: 14, width: 38, height:38, borderRadius:19, backgroundColor: AppColors.success, alignItems:'center', justifyContent:'center', borderWidth:2, borderColor: '#F0E2CE' }}>
             <Ionicons name="checkmark" size={20} color="#FFFFFF" />
           </View>
         </View>
@@ -115,13 +115,13 @@ const SLIDES: Slide[] = [
     accent: '#F59E0B',
     render: (
       <View style={{ alignItems:'center' }}>
-        <View style={{ width: HERO, height: HERO, borderRadius: 20, backgroundColor: withAlpha('#F59E0B',0.14), alignItems:'center', justifyContent:'center', borderWidth:2, borderColor: '#E5E5E5', overflow:'hidden', shadowColor: '#5B3A1A', shadowOpacity: 0.07, shadowRadius: 10, shadowOffset:{width:4,height:4}, elevation:0 }}>
+        <View style={{ width: HERO, height: HERO, borderRadius: 20, backgroundColor: withAlpha('#F59E0B',0.14), alignItems:'center', justifyContent:'center', borderWidth:2, borderColor: '#F0E2CE', overflow:'hidden', shadowColor: '#6B3E12', shadowOpacity: 0.10, shadowRadius: 18, shadowOffset:{width:4,height:4}, elevation:0 }}>
           <View style={{ flexDirection:'row', gap:10 }}>
             <XpChip label="+50 XP ✨" color={AppColors.primary} />
             <XpChip label="🔥 12" color="#F59E0B" delay={80} />
           </View>
           <View style={{ height:10 }} />
-          <View style={{ flexDirection:'row', alignItems:'center', backgroundColor:'#FFFFFF', paddingHorizontal:12, paddingVertical:8, borderRadius:999, borderWidth:2, borderColor: '#E5E5E5' }}>
+          <View style={{ flexDirection:'row', alignItems:'center', backgroundColor:'#FFFFFF', paddingHorizontal:12, paddingVertical:8, borderRadius:999, borderWidth:2, borderColor: '#F0E2CE' }}>
             <View style={{ width:26, height:26, borderRadius:13, backgroundColor: withAlpha(AppColors.primary,0.15), alignItems:'center', justifyContent:'center' }}><Text style={{ fontSize:13 }}><Text>{'🏆'}</Text></Text></View>
             <View style={{ width:8 }} />
             <Text style={{ fontFamily: fontFamilyFor('w700'), fontSize:12, color:AppColors.ink }}><Text>{'Top 3 Leaderboard'}</Text></Text>
@@ -233,7 +233,7 @@ export default function PreOnboardingCarousel() {
         <View style={styles.flex1} />
         {/* Skip lives strictly top-right on steps 1–2; step 3 gets the Get Started CTA instead. */}
         {!last ? (
-          <View style={{ borderRadius:999, borderWidth:2, borderColor: '#E5E5E5', paddingHorizontal:14, paddingVertical:7, backgroundColor: colors.card }}>
+          <View style={{ borderRadius:999, borderWidth:2, borderColor: '#F0E2CE', paddingHorizontal:14, paddingVertical:7, backgroundColor: colors.card }}>
             <Text onPress={()=> { playStepClick(); void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(()=>{}); completeWalkthrough(); }} style={{ fontFamily: fontFamilyFor('w700'), fontSize:12, color: colors.muted }}><Text>Skip</Text></Text>
           </View>
         ) : (
@@ -246,11 +246,11 @@ export default function PreOnboardingCarousel() {
           return (
             <SlidePage key={s.title} delay={idx * 40} width={WIDTH}>
               <View style={{ height: 8 }} />
-              <BlurView intensity={70} tint="light" style={[styles.heroWrap, { borderColor: '#E5E5E5', shadowColor: s.accent }]}>
+              <BlurView intensity={70} tint="light" style={[styles.heroWrap, { borderColor: '#F0E2CE', shadowColor: s.accent }]}>
                 {s.render}
               </BlurView>
               <View style={{ height: 18 }} />
-              <View style={[styles.kickerPill, { backgroundColor: withAlpha(s.accent,0.12), borderColor: '#E5E5E5' }]}>
+              <View style={[styles.kickerPill, { backgroundColor: withAlpha(s.accent,0.12), borderColor: '#F0E2CE' }]}>
                 <Text style={{ fontFamily: fontFamilyFor('w800'), fontSize:10, letterSpacing:1.2, color: s.accent }}><Text>{s.kicker}</Text></Text>
               </View>
               <View style={{ height: 10 }} />
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   flex1:{ flex:1 },
   topRow:{ flexDirection:'row', alignItems:'center', paddingHorizontal:20, paddingTop:14, gap:8 },
   page:{ flex:1, justifyContent:'center', alignItems:'center', paddingHorizontal: 8 },
-  heroWrap:{ width: HERO + 32, borderRadius: 20, borderWidth: 2, alignItems:'center', justifyContent:'center', paddingVertical: 16, overflow: 'hidden', shadowOpacity: 0.07, shadowRadius: 10, shadowOffset: { width: 4, height: 4 }, elevation: 0 },
+  heroWrap:{ width: HERO + 32, borderRadius: 20, borderWidth: 2, alignItems:'center', justifyContent:'center', paddingVertical: 16, overflow: 'hidden', shadowOpacity: 0.10, shadowRadius: 18, shadowOffset: { width: 4, height: 4 }, elevation: 0 },
   kickerPill:{ paddingHorizontal:10, paddingVertical:6, borderRadius:999, borderWidth:2 },
   controls:{ paddingHorizontal:24, paddingBottom:28, alignItems:'center' },
   dotsRow:{ flexDirection:'row', justifyContent:'center', alignItems:'center', gap:8 },

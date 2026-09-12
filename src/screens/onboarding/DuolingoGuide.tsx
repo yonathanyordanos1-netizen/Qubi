@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -25,7 +25,9 @@ import { WidgetGuideScreenshots } from '../../components/onboarding/WidgetGuideS
  * to Log In. Skip shows on steps 1–3 only.
  */
 
-const { width: W, height: H } = Dimensions.get('window');
+// Window size is read per-render via useWindowDimensions() inside the component
+// so slide widths and hero offsets stay correct across every iPhone size and on
+// rotation/multitasking — a module-scope Dimensions.get() snapshot goes stale.
 
 const SLIDES = [
   {
@@ -85,6 +87,7 @@ const finishGuide = (onCustom: (() => void) | undefined, href: string) => {
 
 export function DuolingoGuide({ onGetStarted, onSkip, onLogin, onDone }: { onGetStarted?: () => void; onSkip?: () => void; onLogin?: () => void; onDone?: () => void }) {
   const insets = useSafeAreaInsets();
+  const { width: W, height: H } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);
 

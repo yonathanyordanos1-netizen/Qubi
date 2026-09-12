@@ -163,6 +163,16 @@ function statusOn(habitId: string, dayIndex: number): QuestStatus {
   return selectStatusOf(useAppStore.getState(), habitId, dayIndex);
 }
 
+/** Soft category tint for the leading emoji tile (claymorphism). */
+function catTint(category: string): string {
+  const c = (category || '').toLowerCase();
+  if (c.includes('fit') || c.includes('health') || c.includes('sport')) return '#FFE7D2';
+  if (c.includes('intel') || c.includes('learn') || c.includes('read') || c.includes('study')) return '#DAF0FF';
+  if (c.includes('disc') || c.includes('focus') || c.includes('mind') || c.includes('well')) return '#DFF6E4';
+  if (c.includes('chore') || c.includes('home')) return '#F1E6FF';
+  return '#FFF0DF';
+}
+
 /* ── View tab ──────────────────────────────────────────────────────────────── */
 
 function ViewTab({
@@ -368,19 +378,15 @@ function DailyList({
                 style={[
                   styles.listRow,
                   {
-                    backgroundColor: verified ? (isDark ? 'rgba(16,185,129,0.12)' : '#ECFDF5') : isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF',
-                    borderColor: isDark ? colors.glassEdge : 'rgba(0,0,0,0.08)',
+                    backgroundColor: verified ? (isDark ? 'rgba(16,185,129,0.12)' : '#F0FCF4') : isDark ? '#1E1712' : '#FFFFFF',
+                    borderColor: verified ? (isDark ? 'rgba(16,185,129,0.30)' : '#BFEBCF') : isDark ? 'rgba(255,255,255,0.06)' : '#F0E2CE',
                   },
                 ]}
               >
-                {/* Chunky Duolingo checkbox */}
-                {verified ? (
-                  <View style={styles.checkboxChecked}>
-                    <StrokeIcon name="check" size={14} color="#FFFFFF" strokeWidth={3} />
-                  </View>
-                ) : (
-                  <View style={styles.checkboxEmpty} />
-                )}
+                {/* Category emoji tile (inspo pattern) */}
+                <View style={[styles.emojiTile, { backgroundColor: catTint(habit.category) }]}>
+                  <Text style={{ fontSize: 21 }}>{habit.emoji}</Text>
+                </View>
                 <View style={{ width: 12 }} />
                 <View style={styles.flex1}>
                   <Text
@@ -408,9 +414,13 @@ function DailyList({
                   </View>
                 </View>
                 <View style={{ width: 8 }} />
-                {!verified && (
+                {verified ? (
+                  <View style={styles.checkboxChecked}>
+                    <StrokeIcon name="check" size={16} color="#FFFFFF" strokeWidth={3} />
+                  </View>
+                ) : (
                   <View style={styles.cameraChip}>
-                    <StrokeIcon name="camera" size={14} color="#FFFFFF" strokeWidth={2} />
+                    <StrokeIcon name="camera" size={15} color="#FFFFFF" strokeWidth={2} />
                   </View>
                 )}
               </View>
@@ -599,7 +609,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     shadowColor: '#B45309',
     shadowOpacity: 0.12,
-    shadowRadius: 10,
+    shadowRadius: 18,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
@@ -617,7 +627,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(16,185,129,0.35)',
     shadowColor: '#10B981',
     shadowOpacity: 0.25,
-    shadowRadius: 10,
+    shadowRadius: 18,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
@@ -643,7 +653,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     minWidth: 92,
   },
-  viewTabActive: { backgroundColor: AppColors.primary, shadowColor: '#C2410C', shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  viewTabActive: { backgroundColor: AppColors.primary, shadowColor: '#C2410C', shadowOpacity: 0.35, shadowRadius: 18, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
   viewTabLabel: { fontSize: 12, lineHeight: 16, fontFamily: fontFamilyFor('w700') },
 
   matrixCard: {
@@ -651,9 +661,9 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderWidth: 2,
     paddingBottom: 6,
-    shadowColor: '#5B3A1A',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
+    shadowColor: '#6B3E12',
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
     shadowOffset: { width: 3, height: 3 },
     elevation: 4,
   },
@@ -685,14 +695,20 @@ const styles = StyleSheet.create({
   listRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 20,
-    borderWidth: 2,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderTopWidth: 1.5,
     padding: 14,
-    shadowColor: '#5B3A1A',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    shadowOffset: { width: 3, height: 3 },
+    shadowColor: '#6B3E12',
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
     elevation: 3,
+  },
+  emojiTile: {
+    width: 46, height: 46, borderRadius: 15,
+    alignItems: 'center', justifyContent: 'center',
+    borderTopWidth: 1.5, borderTopColor: 'rgba(255,255,255,0.7)',
   },
   checkboxEmpty: {
     width: 26,
@@ -703,12 +719,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   checkboxChecked: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: AppColors.success,
-    borderWidth: 2,
-    borderColor: '#00000033',
+    borderBottomWidth: 3,
+    borderColor: '#0A8F62',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -729,12 +745,12 @@ const styles = StyleSheet.create({
   },
   durationText: { fontSize: 10, lineHeight: 12, fontFamily: fontFamilyFor('w600'), color: AppColors.muted },
   cameraChip: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: AppColors.primary,
-    borderWidth: 2,
-    borderColor: '#E5E5E5',
+    borderBottomWidth: 3,
+    borderColor: '#C2410C',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -747,12 +763,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#E5E5E5',
+    borderColor: '#F0E2CE',
     padding: 14,
     backgroundColor: '#FFFFFF',
-    shadowColor: '#5B3A1A',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
+    shadowColor: '#6B3E12',
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
     shadowOffset: { width: 3, height: 3 },
     elevation: 3,
   },
@@ -761,7 +777,7 @@ const styles = StyleSheet.create({
     height: 42,
     borderRadius: 13,
     borderWidth: 2,
-    borderColor: '#E5E5E5',
+    borderColor: '#F0E2CE',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -775,12 +791,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 22,
     borderWidth: 2,
-    borderColor: '#E5E5E5',
+    borderColor: '#F0E2CE',
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
-    shadowColor: '#5B3A1A',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
+    shadowColor: '#6B3E12',
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
     shadowOffset: { width: 3, height: 3 },
     elevation: 3,
   },
@@ -790,8 +806,8 @@ const styles = StyleSheet.create({
   cellCoin: {
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#5B3A1A',
-    shadowOpacity: 0.06,
+    shadowColor: '#6B3E12',
+    shadowOpacity: 0.10,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
@@ -805,7 +821,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     borderWidth: 2,
     borderBottomWidth: 0,
-    borderColor: '#E5E5E5',
+    borderColor: '#F0E2CE',
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 28,
@@ -836,10 +852,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#E5E5E5',
-    shadowColor: '#5B3A1A',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
+    borderColor: '#F0E2CE',
+    shadowColor: '#6B3E12',
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },

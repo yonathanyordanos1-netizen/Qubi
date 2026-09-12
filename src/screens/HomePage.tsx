@@ -16,7 +16,7 @@ import { selectCompletedCount, selectHabits, selectStatusOf, selectTodayIndex, s
 import { QuestStatus, type Habit } from '../types/models';
 import { useNav } from './navContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { QubiHeaderLogo } from '../components/ui/QubiHeaderLogo';
+import { HomeSceneHero } from '../components/home/HomeSceneHero';
 import { QuestPath } from '../components/QuestPath';
 import { SupabaseServiceInstance } from '../services/supabase';
 
@@ -205,24 +205,18 @@ export function HomePage() {
     <View style={[styles.flex, { backgroundColor: isDark ? colors.canvas : '#FFF7ED' }]}>
       <ScrollView
         style={styles.flex}
-        contentContainerStyle={{ paddingBottom: 150, paddingTop: insets.top }}
+        contentContainerStyle={{ paddingBottom: 150 }}
         showsVerticalScrollIndicator={false}
         bounces
       >
-        {/* Top Header — squircle mascot avatar, 🔥 streak badge, ⭐ total XP badge */}
-        <QubiHeaderLogo
+        {/* Scene hero — mascot-in-a-world (Boons/Triton inspo) + streak/XP pills */}
+        <HomeSceneHero
+          firstName={firstName}
           streak={streak}
           xp={xp}
-          onAvatarPress={() => { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); nav.openQubi(); }}
-          right={
-            <RnPressable
-              onPress={() => { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); nav.openFriends?.() ?? nav.toast('Friends'); }}
-              style={({ pressed }) => [styles.friendsLauncher, { backgroundColor: colors.card, borderColor: colors.glassEdge }, pressed && { opacity: 0.8 }]}
-            >
-              <Ionicons name="people-outline" size={20} color={colors.ink} />
-              {pendingCount > 0 ? <View style={styles.badge}><Text style={styles.badgeText}><Text>{`${Math.min(pendingCount, 9)}`}</Text></Text></View> : null}
-            </RnPressable>
-          }
+          pendingCount={pendingCount}
+          onMascotPress={() => { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); nav.openQubi(); }}
+          onFriends={() => { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); nav.openFriends?.() ?? nav.toast('Friends'); }}
         />
 
         {/* ── Streak hero — gradient claymorphism card mirroring the widget states ── */}

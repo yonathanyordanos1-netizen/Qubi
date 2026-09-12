@@ -157,10 +157,10 @@ export function XpTicker({
           paddingHorizontal: 18,
           paddingVertical: 8,
           borderWidth: 2,
-          borderColor: '#E5E5E5',
-          shadowColor: '#5B3A1A',
+          borderColor: '#F0E2CE',
+          shadowColor: '#6B3E12',
           shadowOpacity: 0.22,
-          shadowRadius: 10,
+          shadowRadius: 18,
           shadowOffset: { width: 3, height: 3 },
           elevation: 6,
         }

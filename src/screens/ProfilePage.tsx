@@ -226,7 +226,7 @@ export function ProfilePage() {
       {/* ── Quest setup (from onboarding) ── */}
       {focusAreas.length > 0 || dailyPace != null || baselineRank != null ? (
         <View style={styles.sectionSpacing}>
-          <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#000000' }]}>
+          <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#F0E2CE' }]}>
             <Text style={[styles.cardTitle, { color: colors.ink }]}>Your Quest Profile</Text>
             <View style={{ height: 12 }} />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -246,7 +246,7 @@ export function ProfilePage() {
 
       {/* ── Weekly Progress — Duolingo-style you-vs-league chart ── */}
       <View style={styles.sectionSpacing}>
-        <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#000000' }]}>
+        <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#F0E2CE' }]}>
           <View style={styles.row}>
             <Text style={[styles.cardTitle, { color: colors.ink }]}>Weekly Progress</Text>
             <View style={styles.flex1} />
@@ -269,7 +269,7 @@ export function ProfilePage() {
 
       {/* ── Badges ── */}
       <View style={styles.sectionSpacing}>
-        <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#000000' }]}>
+        <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#F0E2CE' }]}>
           <View style={styles.row}>
             <Text style={[styles.cardTitle, { color: colors.ink }]}>Badges</Text>
             <View style={styles.flex1} />
@@ -290,7 +290,7 @@ export function ProfilePage() {
                       : isDark
                         ? 'rgba(255,255,255,0.06)'
                         : '#FFF7ED',
-                    borderColor: badge.earned ? AppColors.primary : isDark ? colors.glassEdge : '#00000022',
+                    borderColor: badge.earned ? AppColors.primary : isDark ? colors.glassEdge : 'rgba(107,62,18,0.13)',
                   },
                 ]}
               >
@@ -312,14 +312,14 @@ export function ProfilePage() {
 
       {/* ── Account card ── */}
       <View style={styles.sectionSpacing}>
-        <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#000000' }]}>
+        <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#F0E2CE' }]}>
           <View style={styles.row}>
             <View
               style={[
                 styles.providerTile,
                 {
                   backgroundColor: isSignedIn ? withAlpha(AppColors.success, 0.1) : isDark ? 'rgba(255,255,255,0.06)' : '#FFF7ED',
-                  borderColor: isDark ? colors.glassEdge : '#00000022',
+                  borderColor: isDark ? colors.glassEdge : 'rgba(107,62,18,0.13)',
                 },
               ]}
             >
@@ -347,7 +347,7 @@ export function ProfilePage() {
 
       {/* ── About card ── */}
       <View style={styles.sectionSpacing}>
-        <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#000000' }]}>
+        <View style={[styles.plainCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: isDark ? colors.glassEdge : '#F0E2CE' }]}>
           <AboutRow icon="info" label="App Version" value="1.2.0" ink={colors.ink} muted={colors.muted} />
           <RnPressable onPress={() => { useAppStore.getState().resetOnboardingForReplay(); nav.toast('Onboarding replay armed'); }}>
             <AboutRow
@@ -419,7 +419,7 @@ function MetaChip({ color, text, dark }: { color: string; text: string; dark: bo
         borderRadius: 999,
         backgroundColor: withAlpha(color, dark ? 0.16 : 0.1),
         borderWidth: 2,
-        borderColor: dark ? 'transparent' : '#00000022',
+        borderColor: dark ? 'transparent' : 'rgba(107,62,18,0.13)',
       }}
     >
       <Text style={{ fontSize: 11.5, fontFamily: fontFamilyFor('w800'), color }}>
@@ -443,7 +443,7 @@ function StatPill({
   dark: boolean;
 }) {
   return (
-    <View style={[styles.statPill, { backgroundColor: dark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: dark ? 'rgba(255,255,255,0.1)' : '#000000' }]}>
+    <View style={[styles.statPill, { backgroundColor: dark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', borderColor: dark ? 'rgba(255,255,255,0.1)' : '#F0E2CE' }]}>
       <View style={[styles.statPillIcon, { backgroundColor: withAlpha(accent, 0.12), borderColor: withAlpha(accent, 0.3) }]}>
         <StrokeIcon name={icon} size={14} color={accent} strokeWidth={1.8} />
       </View>
@@ -516,27 +516,27 @@ const styles = StyleSheet.create({
     height: 42,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: '#E5E5E5',
+    borderColor: '#F0E2CE',
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#5B3A1A',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
+    shadowColor: '#6B3E12',
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
     shadowOffset: { width: 2, height: 2 },
     elevation: 3,
   },
 
   heroCard: {
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: '#E5E5E5',
+    borderRadius: 30,
+    borderTopWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.9)',
     backgroundColor: '#FFFFFF',
     padding: 20,
-    shadowColor: '#5B3A1A',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    shadowOffset: { width: 4, height: 4 },
+    shadowColor: '#6B3E12',
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
     elevation: 5,
   },
   avatarTile: {
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     height: 88,
     borderRadius: 24,
     borderWidth: 2,
-    borderColor: '#E5E5E5',
+    borderColor: '#F0E2CE',
     alignItems: 'center',
     justifyContent: 'center',
     shadowOpacity: 0.35,
@@ -562,7 +562,7 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     backgroundColor: AppColors.success,
     borderWidth: 2,
-    borderColor: '#E5E5E5',
+    borderColor: '#F0E2CE',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 999,
     borderWidth: 2,
-    borderColor: '#E5E5E5',
+    borderColor: '#F0E2CE',
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -623,10 +623,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 10,
     paddingVertical: 16,
-    shadowColor: '#5B3A1A',
+    shadowColor: '#6B3E12',
     shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
     elevation: 3,
   },
   statPillIcon: {
@@ -642,13 +642,13 @@ const styles = StyleSheet.create({
 
   sectionSpacing: { paddingHorizontal: 16, marginBottom: 12, marginTop: 2 },
   plainCard: {
-    borderRadius: 20,
-    borderWidth: 2,
+    borderRadius: 26,
+    borderTopWidth: 1.5,
     padding: 16,
-    shadowColor: '#5B3A1A',
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
+    shadowColor: '#6B3E12',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
     elevation: 3,
   },
   cardTitle: { fontSize: 15, fontFamily: fontFamilyFor('w800') },
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     shadowOpacity: 0.5,
-    shadowRadius: 6,
+    shadowRadius: 18,
     shadowOffset: { width: 0, height: 0 },
     elevation: 3,
   },
@@ -721,12 +721,12 @@ const styles = StyleSheet.create({
     height: 54,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#E5E5E5',
+    borderColor: '#F0E2CE',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#5B3A1A',
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
+    shadowColor: '#6B3E12',
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },

@@ -1,7 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { fontFamilyFor } from '../theme/typography';
+import { playTaskCompleted, preloadSoundsAsync } from '../services/soundService';
 
 const QUBI = require('../../Qubi/Qubi_2.jpg');
 
@@ -34,6 +36,15 @@ export function SplashScreen({ duration = 2500 }: SplashScreenProps) {
   const bar = useRef(new Animated.Value(0)).current;
 
   const slideOffset = height;
+
+  // Launch chime — preload first so the very first play on a cold start never
+  // races the native audio session. Mute-aware via soundService (expo-audio;
+  // expo-av is deprecated in SDK 57). Fire-and-forget, never blocks the splash.
+  useEffect(() => {
+    preloadSoundsAsync();
+    const t = setTimeout(() => { playTaskCompleted(); }, 260);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     Animated.parallel([
@@ -105,9 +116,12 @@ export function SplashScreen({ duration = 2500 }: SplashScreenProps) {
             ],
           }}
         >
-          <View style={styles.mascotRing}>
-            <Image source={QUBI} style={styles.mascot} resizeMode="cover" accessible accessibilityLabel="Qubi" />
-          </View>
+          {/* Liquid-glass emblem frame: real blur lens behind a translucent rim */}
+          <BlurView intensity={38} tint="light" style={styles.glassFrame}>
+            <View style={styles.mascotRing}>
+              <Image source={QUBI} style={styles.mascot} resizeMode="cover" accessible accessibilityLabel="Qubi" />
+            </View>
+          </BlurView>
         </Animated.View>
 
         <View style={{ height: 18 }} />
@@ -178,6 +192,15 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: 13,
     backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  glassFrame: {
+    padding: 14,
+    borderRadius: 108,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   mascotRing: {
     width: 184,

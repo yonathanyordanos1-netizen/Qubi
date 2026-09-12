@@ -17,7 +17,7 @@ import { SplashScreen as SplashOverlay } from './src/components/SplashScreen';
 import { useAppStore, loadAppState, markOnboardingComplete } from './src/state/appStore';
 import { useSettingsStore } from './src/state/settingsStore';
 import { useGateStore } from './src/state/gateStore';
-import { DuolingoGuide } from './src/screens/onboarding/DuolingoGuide';
+import { PlayOnboarding } from './src/screens/onboarding/PlayOnboarding';
 import { SixStepWizard } from './src/screens/onboarding/SixStepWizard';
 import { SupabaseServiceInstance, socialOAuthInFlight } from './src/services/supabase';
 import { NavContext, type UiNav } from './src/screens/navContext';
@@ -298,7 +298,7 @@ function Root() {
     content = (
       <View style={[styles.flex, { backgroundColor: isDark ? AppColors.canvasDark : '#FFFFFF' }]}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
-        <DuolingoGuide onDone={() => useGateStore.getState().completeWalkthrough()} />
+        <PlayOnboarding onDone={() => useGateStore.getState().completeWalkthrough()} />
       </View>
     );
   }

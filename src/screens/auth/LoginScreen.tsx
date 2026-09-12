@@ -330,20 +330,29 @@ export function LoginScreen({ onBack, onLoginSuccess, onOtpRequired, onDemoMode 
 
                 {/* Primary CTA — Bôons pill: 3D bottom edge, full-width */}
                 {isLoading ? (
-                  <View style={[styles.ctaShadow, { backgroundColor: '#C2410C' }]}>
-                    <View style={[styles.ctaFront, { opacity: 0.7 }]}>
+                  <View style={styles.ctaContainer}>
+                    <View style={[styles.ctaShadow, { backgroundColor: '#C2410C' }]} />
+                    <View style={[styles.ctaFront, { overflow: 'hidden' }]}>
+                      <LinearGradient colors={['#FFA45C', '#FF8A3D']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={[StyleSheet.absoluteFill, { borderRadius: 999 }]} />
                       <ActivityIndicator size="small" color="#FFFFFF" />
                     </View>
                   </View>
                 ) : (
                   <View style={styles.ctaContainer}>
-                    <View style={[styles.ctaShadow, { backgroundColor: '#C2410C' }]} />
+                    <View style={[styles.ctaShadow, { backgroundColor: canSubmit ? '#C2410C' : '#9AA1A8' }]} />
                     <TouchableOpacity
                       onPress={handlePrimary}
-                      activeOpacity={0.85}
+                      activeOpacity={0.9}
                       disabled={!canSubmit}
-                      style={[styles.ctaFront, { backgroundColor: canSubmit ? AppColors.primary : '#B9C0C7' }]}
+                      style={[styles.ctaFront, { overflow: 'hidden' }]}
                     >
+                      <LinearGradient
+                        colors={canSubmit ? ['#FFA45C', '#FF8A3D'] : ['#CBB9A6', '#B9C0C7']}
+                        start={{ x: 0.5, y: 0 }}
+                        end={{ x: 0.5, y: 1 }}
+                        style={[StyleSheet.absoluteFill, { borderRadius: 999 }]}
+                      />
+                      <View style={styles.ctaGloss} pointerEvents="none" />
                       <Text style={styles.ctaText}>
                         {mode === 'login' ? 'Start Learning' : 'Create Account'}
                       </Text>
@@ -464,6 +473,7 @@ const styles = StyleSheet.create({
   ctaFront: {
     height: 52, borderRadius: 999, alignItems: 'center', justifyContent: 'center',
   },
+  ctaGloss: { position: 'absolute', top: 5, left: 18, right: 18, height: 12, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.28)' },
   ctaText: { fontSize: 16, lineHeight: 20, fontFamily: fontFamilyFor('w800'), color: '#FFFFFF', letterSpacing: 0.2 },
   dividerContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   dividerLine: { flex: 1, height: 1 },
